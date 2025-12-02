@@ -68,12 +68,29 @@ cd herbarium-specimen-tools
 
 # Install dependencies
 pip install -r requirements.txt
+# OR with uv (recommended):
+# uv pip install -r requirements.txt
 ```
 
-### Mobile Interface
+### Try with Sample Data
 
 ```bash
-# Start mobile review server
+# Start mobile review server with included sample data
+python mobile/run_mobile_server.py --dev
+
+# Access the mobile interface
+# Open http://localhost:8000 in your browser
+# Default credentials (development only):
+#   Username: testuser
+#   Password: testpass123
+```
+
+**Note**: Sample data is included in `examples/sample_data/` but does not include images. The server will start successfully, but image viewing will fail until you add your own specimen images.
+
+### Mobile Interface with Your Data
+
+```bash
+# Start mobile review server with your own data
 python mobile/run_mobile_server.py \
   --extraction-dir path/to/extractions \
   --image-dir path/to/images \

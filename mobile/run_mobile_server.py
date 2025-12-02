@@ -29,13 +29,13 @@ def main():
     parser.add_argument(
         "--extraction-dir",
         type=Path,
-        default=Path("./docs/data/aafc/herbarium/latest"),
+        default=Path("./examples/sample_data"),
         help="Directory containing raw.jsonl",
     )
     parser.add_argument(
         "--image-dir",
         type=Path,
-        default=Path("./docs/data/aafc/herbarium/images"),
+        default=Path("./examples/sample_data/images"),
         help="Directory containing specimen images",
     )
     parser.add_argument(

@@ -8,31 +8,50 @@
 
 Sample extraction results in JSONL format (5 specimens).
 
-**Fields**:
-- `catalog_number` - Specimen catalog ID (EXAMPLE-001, etc.)
-- `scientific_name` - Species scientific name
-- `confidence` - AI confidence score (0.0-1.0)
-- `event_date` - Collection date
-- `recorded_by` - Collector name (anonymized)
-- `locality` - Collection location (generic)
-- `state_province` - State/province (generic)
-- `country` - Country (generic)
-- `habitat` - Habitat description
-- `minimum_elevation_in_meters` - Elevation
-- `coordinates` - Lat/lon (approximate)
-- `image_sha256` - Image hash (placeholder)
-- `extraction_method` - OCR/AI method used
-- `extraction_timestamp` - When extracted
-- `status` - Review status (PENDING/IN_REVIEW/APPROVED/REJECTED)
-- `priority` - Priority level (CRITICAL/HIGH/MEDIUM/LOW/MINIMAL)
-- `issues` - Optional validation issues
+**Format**: Each line is a JSON object with the following structure:
+```json
+{
+  "image": "EXAMPLE-001",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "model": "gpt-4o-mini",
+  "provider": "openai",
+  "extraction_method": "gpt-4o-mini",
+  "ocr_engine": "apple_vision",
+  "dwc": {
+    "catalogNumber": {"value": "EXAMPLE-001", "confidence": 0.95},
+    "scientificName": {"value": "Artemisia frigida Willd.", "confidence": 0.95},
+    "eventDate": {"value": "1969-08-14", "confidence": 0.92},
+    ...
+  }
+}
+```
 
-**Statuses**:
-- EXAMPLE-001: PENDING (not yet reviewed)
-- EXAMPLE-002: PENDING (high priority)
-- EXAMPLE-003: PENDING (low priority)
-- EXAMPLE-004: IN_REVIEW (has issues - low confidence date)
-- EXAMPLE-005: APPROVED (completed review)
+**Top-level fields**:
+- `image` - Specimen identifier (matches image filename)
+- `timestamp` - Extraction timestamp (ISO 8601)
+- `model` - AI model used for extraction
+- `provider` - AI provider (e.g., openai, anthropic)
+- `extraction_method` - Method used (OCR + AI)
+- `ocr_engine` - OCR engine used (e.g., apple_vision, tesseract)
+
+**Darwin Core fields** (in `dwc` object):
+Each field has `value` and `confidence` (0.0-1.0):
+- `catalogNumber` - Specimen catalog ID
+- `scientificName` - Species scientific name
+- `eventDate` - Collection date
+- `recordedBy` - Collector name
+- `locality` - Collection location
+- `stateProvince` - State/province
+- `country` - Country
+- `habitat` - Habitat description
+- `minimumElevationInMeters` - Elevation
+
+**Specimens**:
+- EXAMPLE-001: High quality (all fields complete, high confidence)
+- EXAMPLE-002: Good quality (slightly lower confidence on some fields)
+- EXAMPLE-003: High quality (well-preserved data)
+- EXAMPLE-004: Lower quality (low confidence on date - only month/year)
+- EXAMPLE-005: Excellent quality (high confidence across all fields)
 
 ## Images
 
