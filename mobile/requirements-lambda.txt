@@ -1,0 +1,19 @@
+# AWS Lambda Dependencies
+# These are packaged into a Lambda Layer during deployment
+
+# Core app dependencies
+fastapi>=0.117.1
+uvicorn>=0.37.0
+pydantic>=2.0.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6
+passlib[bcrypt]>=1.7.4
+
+# Lambda adapter
+mangum>=0.17.0
+
+# AWS SDK (boto3 provided by Lambda runtime, but include for local testing)
+boto3>=1.40.39
+
+# Review engine dependencies
+sqlalchemy

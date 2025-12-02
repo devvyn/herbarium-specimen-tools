@@ -1,0 +1,18 @@
+# Core dependencies for Herbarium Specimen Tools
+
+# Mobile Review Interface
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6
+passlib[bcrypt]>=1.7.4
+
+# Analytics Tools (optional)
+duckdb>=0.9.0
+
+# Data processing
+python-dateutil>=2.8.2
+
+# Development (optional)
+pytest>=7.4.0
+ruff>=0.1.0

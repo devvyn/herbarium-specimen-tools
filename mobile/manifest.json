@@ -1,0 +1,43 @@
+{
+  "name": "Herbarium Review",
+  "short_name": "Herbarium",
+  "description": "Mobile specimen curation for herbarium collections",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/queue.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Review Queue"
+    },
+    {
+      "src": "/screenshots/specimen.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Specimen Detail"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "scope": "/",
+  "prefer_related_applications": false
+}

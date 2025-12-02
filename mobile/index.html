@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#10b981">
+
+    <title>Herbarium Review</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/app.css">
+
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Loading State -->
+        <div v-if="loading" class="loading-screen">
+            <div class="spinner"></div>
+            <p>Loading specimens...</p>
+        </div>
+
+        <!-- Login Screen -->
+        <div v-else-if="!isAuthenticated" class="login-screen">
+            <div class="login-card">
+                <h1>🌿 Herbarium Review</h1>
+                <p>Mobile specimen curation</p>
+
+                <form @submit.prevent="login" class="login-form">
+                    <input
+                        v-model="username"
+                        type="text"
+                        placeholder="Username"
+                        class="input"
+                        autocapitalize="none"
+                    >
+                    <input
+                        v-model="password"
+                        type="password"
+                        placeholder="Password"
+                        class="input"
+                    >
+                    <button type="submit" class="btn btn-primary">
+                        Sign In
+                    </button>
+                </form>
+
+                <div v-if="loginError" class="error-message">
+                    {{ loginError }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div v-else class="app-container">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-content">
+                    <h1 class="header-title">
+                        <span v-if="currentView === 'queue'">Review Queue</span>
+                        <span v-else-if="currentView === 'specimen'">Specimen Details</span>
+                        <span v-else>Statistics</span>
+                    </h1>
+                    <div class="header-actions">
+                        <button
+                            v-if="currentView !== 'queue'"
+                            @click="currentView = 'queue'"
+                            class="btn-icon"
+                        >
+                            ← Back
+                        </button>
+                        <button @click="showStats = !showStats" class="btn-icon">
+                            📊
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Banner -->
+                <div v-if="showStats" class="stats-banner">
+                    <div class="stat">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value">{{ stats.total_specimens || 0 }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Pending</span>
+                        <span class="stat-value">{{ stats.status_counts?.PENDING || 0 }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Approved</span>
+                        <span class="stat-value">{{ stats.status_counts?.APPROVED || 0 }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Critical</span>
+                        <span class="stat-value critical">{{ stats.priority_counts?.CRITICAL || 0 }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Queue View -->
+            <div v-if="currentView === 'queue'" class="queue-view">
+                <!-- Filters -->
+                <div class="filters">
+                    <select v-model="filters.priority" @change="loadQueue" class="filter-select">
+                        <option value="">All Priorities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+
+                    <select v-model="filters.status" @change="loadQueue" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_REVIEW">In Review</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                </div>
+
+                <!-- Specimen Cards -->
+                <div class="specimen-cards">
+                    <div
+                        v-for="specimen in queue"
+                        :key="specimen.id"
+                        @click="openSpecimen(specimen.id)"
+                        class="specimen-card"
+                        :class="getPriorityClass(specimen.priority)"
+                    >
+                        <div class="card-header">
+                            <span class="catalog-number">{{ specimen.catalog_number || 'No #' }}</span>
+                            <span class="priority-badge" :class="specimen.priority.toLowerCase()">
+                                {{ specimen.priority }}
+                            </span>
+                        </div>
+
+                        <div class="card-body">
+                            <p class="scientific-name">{{ specimen.scientific_name }}</p>
+                            <div class="card-metrics">
+                                <span class="metric">
+                                    Quality: {{ specimen.quality_score }}%
+                                </span>
+                                <span class="metric">
+                                    Complete: {{ specimen.completeness }}%
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="status-badge" :class="specimen.status.toLowerCase()">
+                                {{ specimen.status }}
+                            </span>
+                            <span v-if="specimen.flagged" class="flag-icon">🚩</span>
+                            <span v-if="specimen.critical_issues > 0" class="issue-count">
+                                ⚠️ {{ specimen.critical_issues }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load More -->
+                <div v-if="hasMore" class="load-more">
+                    <button @click="loadMore" class="btn btn-secondary">
+                        Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Specimen Detail View -->
+            <div v-else-if="currentView === 'specimen'" class="specimen-view">
+                <div v-if="currentSpecimen" class="specimen-detail">
+                    <!-- Image Viewer -->
+                    <div class="image-container">
+                        <img
+                            :src="getImageUrl(currentSpecimen.id)"
+                            :alt="currentSpecimen.id"
+                            class="specimen-image"
+                            @click="toggleImageZoom"
+                            :class="{ 'zoomed': imageZoomed }"
+                        >
+                        <div class="image-hint">Tap to zoom</div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button
+                            @click="quickAction('approve')"
+                            class="btn btn-success"
+                            :disabled="actionLoading"
+                        >
+                            ✓ Approve
+                        </button>
+                        <button
+                            @click="quickAction('reject')"
+                            class="btn btn-danger"
+                            :disabled="actionLoading"
+                        >
+                            ✗ Reject
+                        </button>
+                        <button
+                            @click="quickAction('flag')"
+                            class="btn btn-warning"
+                            :disabled="actionLoading"
+                        >
+                            🚩 Flag
+                        </button>
+                    </div>
+
+                    <!-- Priority Control -->
+                    <div class="priority-control">
+                        <label>Priority</label>
+                        <select
+                            v-model="currentSpecimen.review.priority"
+                            @change="updatePriority"
+                            class="filter-select"
+                        >
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                            <option value="MINIMAL">Minimal</option>
+                        </select>
+                    </div>
+
+                    <!-- Field Editor -->
+                    <div class="fields-editor">
+                        <h3>Fields</h3>
+
+                        <div
+                            v-for="(fieldData, fieldName) in currentSpecimen.fields"
+                            :key="fieldName"
+                            class="field-item"
+                            :class="{ 'low-confidence': fieldData.confidence < 0.7 }"
+                        >
+                            <div class="field-header">
+                                <label class="field-label">{{ formatFieldName(fieldName) }}</label>
+                                <span
+                                    class="confidence-badge"
+                                    :class="getConfidenceClass(fieldData.confidence)"
+                                >
+                                    {{ Math.round(fieldData.confidence * 100) }}%
+                                </span>
+                            </div>
+
+                            <div class="field-input-group">
+                                <input
+                                    v-model="fieldData.corrected_value"
+                                    :placeholder="fieldData.value || 'No value'"
+                                    class="input"
+                                    @blur="saveFieldCorrection(fieldName, fieldData)"
+                                >
+                                <button
+                                    v-if="fieldData.value && !fieldData.corrected_value"
+                                    @click="acceptSuggestion(fieldName, fieldData)"
+                                    class="btn-sm btn-accept"
+                                    title="Accept AI suggestion"
+                                >
+                                    ✓
+                                </button>
+                            </div>
+
+                            <div v-if="fieldData.value" class="field-hint">
+                                AI suggested: {{ fieldData.value }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GBIF Validation -->
+                    <div v-if="currentSpecimen.gbif_validation" class="gbif-validation">
+                        <h3>GBIF Validation</h3>
+                        <div class="validation-item">
+                            <span>Taxonomy:</span>
+                            <span :class="currentSpecimen.gbif_validation.taxonomy_verified ? 'success' : 'error'">
+                                {{ currentSpecimen.gbif_validation.taxonomy_verified ? '✓ Verified' : '✗ Issues' }}
+                            </span>
+                        </div>
+                        <div v-if="currentSpecimen.gbif_validation.taxonomy_issues?.length" class="issues-list">
+                            <p v-for="issue in currentSpecimen.gbif_validation.taxonomy_issues" :key="issue">
+                                • {{ issue }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="notes-section">
+                        <h3>Notes</h3>
+                        <textarea
+                            v-model="currentSpecimen.review.notes"
+                            placeholder="Add notes..."
+                            class="textarea"
+                            @blur="saveNotes"
+                        ></textarea>
+                    </div>
+
+                    <!-- Issues -->
+                    <div v-if="currentSpecimen.issues?.critical?.length" class="issues-section">
+                        <h3>Critical Issues</h3>
+                        <div class="issue-item" v-for="issue in currentSpecimen.issues.critical" :key="issue">
+                            ⚠️ {{ issue }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div v-if="toast.show" class="toast" :class="toast.type">
+            {{ toast.message }}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.error('Service Worker registration failed', err));
+        }
+    </script>
+</body>
+</html>

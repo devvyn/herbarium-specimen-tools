@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Herbarium Mobile Review API - Serverless deployment
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.11
+    Environment:
+      Variables:
+        S3_BUCKET: !Ref DataBucket
+        EXTRACTION_DATA_KEY: data/raw.jsonl
+        ENABLE_GBIF: 'true'
+        ENVIRONMENT: !Ref Stage
+        # Security configuration - SET THESE IN PRODUCTION
+        # JWT_SECRET_KEY: Set via AWS Secrets Manager or Parameter Store
+        # AUTH_USERS: Set via AWS Secrets Manager (format: username:hashedpassword)
+        # ALLOWED_ORIGINS: Set for your domain
+        # ALLOWED_HOSTS: Set for your domain
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment stage
+
+Resources:
+  # S3 Bucket for specimen images and extraction data
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'herbarium-specimens-${AWS::AccountId}-${Stage}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - '*'
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedHeaders:
+              - '*'
+            MaxAge: 3600
+
+  # Lambda function
+  HerbariumAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'herbarium-mobile-api-${Stage}'
+      CodeUri: .
+      Handler: lambda_handler.lambda_handler
+      Description: Herbarium mobile review API
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DataBucket
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+      Events:
+        # API Gateway routes
+        RootPath:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref HerbariumAPI
+        ProxyPath:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref HerbariumAPI
+
+  # API Gateway
+  HerbariumAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'herbarium-mobile-api-${Stage}'
+      StageName: !Ref Stage
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      BinaryMediaTypes:
+        - 'image/*'
+        - 'application/octet-stream'
+
+  # CloudWatch Logs
+  APILogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/herbarium-mobile-api-${Stage}'
+      RetentionInDays: 7
+
+  # Lambda Layer for dependencies
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub 'herbarium-dependencies-${Stage}'
+      Description: Python dependencies for Herbarium API
+      ContentUri: dependencies/
+      CompatibleRuntimes:
+        - python3.11
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.11
+
+Outputs:
+  APIEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${HerbariumAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+    Export:
+      Name: !Sub 'HerbariumAPIEndpoint-${Stage}'
+
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt HerbariumAPIFunction.Arn
+    Export:
+      Name: !Sub 'HerbariumFunctionArn-${Stage}'
+
+  DataBucketName:
+    Description: S3 bucket for specimen data
+    Value: !Ref DataBucket
+    Export:
+      Name: !Sub 'HerbariumDataBucket-${Stage}'
+
+  MobileAppURL:
+    Description: Mobile app URL (add this to iPhone)
+    Value: !Sub 'https://${HerbariumAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/'
