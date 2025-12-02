@@ -4,6 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/devvyn/herbarium-specimen-tools/workflows/CI/badge.svg)](https://github.com/devvyn/herbarium-specimen-tools/actions)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 ---
 
@@ -31,6 +33,8 @@ Progressive Web App for reviewing specimen extractions on mobile devices.
 - GBIF validation display
 - Priority-based workflow
 - Image viewer with pinch-zoom
+- JWT authentication with rate limiting
+- Structured logging and request tracking
 
 **Use Cases**:
 - Field curation on tablets
