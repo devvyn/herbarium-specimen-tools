@@ -61,6 +61,12 @@ images/
 *.tif
 *.tiff
 
+# EXCEPT: Allow sample data
+!examples/sample_data/*.jsonl
+!examples/sample_data/*.csv
+!examples/sample_data/images/*.jpg
+!examples/sample_data/images/*.png
+
 # Logs
 *.log
 
