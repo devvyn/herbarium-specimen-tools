@@ -63,7 +63,36 @@ DuckDB-based analysis for extracted specimen data.
 
 ## Quick Start
 
-### Installation
+### One-Command Setup (Easiest)
+
+Get started in under 2 minutes with automated setup:
+
+**macOS/Linux**:
+```bash
+./scripts/quick_start.sh
+```
+
+**Windows**:
+```batch
+scripts\quick_start.bat
+```
+
+This automated script will:
+- ✅ Install uv package manager (if needed)
+- ✅ Create and activate virtual environment
+- ✅ Install all dependencies
+- ✅ Generate sample specimen images
+- ✅ Configure .env file interactively
+- ✅ Display next steps
+
+After completion, start the server:
+```bash
+python mobile/run_mobile_server.py --dev
+```
+
+Then open http://localhost:8000 and use credentials: `testuser` / `testpass123`
+
+### Manual Installation
 
 **Using uv (recommended - fastest)**:
 ```bash
