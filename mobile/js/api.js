@@ -46,10 +46,36 @@ class HerbariumAPI {
             if (response.status === 401) {
                 // Token expired, clear auth
                 this.logout();
-                throw new Error('Authentication expired');
+                throw new Error('Your session has expired. Please log in again.');
             }
+
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || `HTTP ${response.status}`);
+            let errorMessage = error.detail;
+
+            // Provide human-readable error messages (accessibility)
+            if (!errorMessage) {
+                switch (response.status) {
+                    case 404:
+                        errorMessage = 'The requested specimen was not found.';
+                        break;
+                    case 403:
+                        errorMessage = 'You do not have permission to perform this action.';
+                        break;
+                    case 429:
+                        errorMessage = 'Too many requests. Please try again in a few minutes.';
+                        break;
+                    case 500:
+                        errorMessage = 'A server error occurred. Please try again later.';
+                        break;
+                    case 503:
+                        errorMessage = 'The service is temporarily unavailable. Please try again later.';
+                        break;
+                    default:
+                        errorMessage = `An error occurred (Error ${response.status}). Please try again.`;
+                }
+            }
+
+            throw new Error(errorMessage);
         }
 
         return response.json();

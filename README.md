@@ -65,15 +65,26 @@ DuckDB-based analysis for extracted specimen data.
 
 ### Installation
 
+**Using uv (recommended - fastest)**:
 ```bash
-# Clone repository
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and install
 git clone https://github.com/devvyn/herbarium-specimen-tools.git
 cd herbarium-specimen-tools
+uv venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+uv pip install -e .
+```
 
-# Install dependencies
-pip install -r requirements.txt
-# OR with uv (recommended):
-# uv pip install -r requirements.txt
+**Using pip (traditional)**:
+```bash
+git clone https://github.com/devvyn/herbarium-specimen-tools.git
+cd herbarium-specimen-tools
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -e .
 ```
 
 ### Try with Sample Data

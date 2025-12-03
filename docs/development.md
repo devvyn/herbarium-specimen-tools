@@ -27,6 +27,25 @@ Guide for contributing to herbarium-specimen-tools.
 
 ### Quick Start
 
+**Using uv (recommended)**:
+```bash
+# Clone repository
+git clone https://github.com/devvyn/herbarium-specimen-tools.git
+cd herbarium-specimen-tools
+
+# Create virtual environment and install with dev dependencies
+uv venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Start development server
+python mobile/run_mobile_server.py --dev
+```
+
+**Using pip (traditional)**:
 ```bash
 # Clone repository
 git clone https://github.com/devvyn/herbarium-specimen-tools.git
@@ -34,10 +53,10 @@ cd herbarium-specimen-tools
 
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
 # Run tests
 pytest
@@ -59,9 +78,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Create virtual environment and install dependencies
 uv venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv pip install -e ".[dev]"
 
-# Or use uv to run commands directly
+# Or use uv to run commands directly (no activation needed)
 uv run pytest
 uv run python mobile/run_mobile_server.py --dev
 ```

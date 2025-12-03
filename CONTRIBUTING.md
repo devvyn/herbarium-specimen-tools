@@ -72,20 +72,39 @@ git push origin feature/your-feature-name
 
 ### Local Setup
 
+**Using uv (recommended)**:
 ```bash
-# Clone repository
-git clone https://github.com/devvyn/herbarium-specimen-tools.git
+# Fork and clone your fork
+git clone https://github.com/YOUR-USERNAME/herbarium-specimen-tools.git
+cd herbarium-specimen-tools
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run linting
+ruff check src/ tests/
+```
+
+**Using pip (traditional)**:
+```bash
+# Fork and clone your fork
+git clone https://github.com/YOUR-USERNAME/herbarium-specimen-tools.git
 cd herbarium-specimen-tools
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
-# Install development dependencies
-pip install pytest ruff
+# Run tests
+pytest
 ```
 
 ### Running Tests

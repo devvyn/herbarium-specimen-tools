@@ -1,3 +1,10 @@
+# DEPRECATED: This file is kept for backwards compatibility only.
+# Please use pyproject.toml instead:
+#   uv pip install -e .           # Runtime dependencies
+#   uv pip install -e ".[dev]"    # With dev tools
+#
+# This file will be removed in v0.2.0
+#
 # Core dependencies for Herbarium Specimen Tools
 
 # Mobile Review Interface

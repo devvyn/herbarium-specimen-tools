@@ -1,0 +1,65 @@
+[project]
+name = "herbarium-specimen-tools"
+version = "0.1.0"
+description = "Open-source tools for herbarium digitization workflows"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "devvyn", email = "noreply@github.com"}]
+keywords = ["herbarium", "digitization", "darwin-core", "specimens"]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    "passlib[bcrypt]>=1.7.4",
+    "PyJWT>=2.8.0",
+    "pygbif>=0.6.3",
+    "aiohttp>=3.9.0",
+    "python-dateutil>=2.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.4.0",
+]
+
+analytics = [
+    "duckdb>=0.9.0",
+]
+
+lambda = [
+    "mangum>=0.17.0",
+    "boto3>=1.40.39",
+]
+
+all = ["herbarium-specimen-tools[dev,analytics,lambda]"]
+
+[project.urls]
+Homepage = "https://github.com/devvyn/herbarium-specimen-tools"
+Repository = "https://github.com/devvyn/herbarium-specimen-tools"
+Issues = "https://github.com/devvyn/herbarium-specimen-tools/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q --strict-markers"

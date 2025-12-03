@@ -575,7 +575,8 @@ body {
 }
 
 .input:focus {
-    outline: none;
+    outline: 2px solid var(--color-primary); /* WCAG 2.4.7 Focus Visible */
+    outline-offset: 2px;
     border-color: var(--color-primary);
 }
 
@@ -591,7 +592,8 @@ body {
 }
 
 .textarea:focus {
-    outline: none;
+    outline: 2px solid var(--color-primary); /* WCAG 2.4.7 Focus Visible */
+    outline-offset: 2px;
     border-color: var(--color-primary);
 }
 
@@ -608,6 +610,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* WCAG AAA touch target size */
 }
 
 .btn:active {
@@ -646,21 +649,47 @@ body {
 }
 
 .btn-icon {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-md); /* Increased from sm to md for larger touch target */
     background: transparent;
     border: none;
     font-size: var(--font-size-lg);
     cursor: pointer;
+    min-width: 44px; /* WCAG AAA touch target size */
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-sm {
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md); /* Increased for better touch target */
     font-size: var(--font-size-sm);
+    min-height: 44px; /* WCAG AAA touch target size */
 }
 
 .btn-accept {
     background: var(--color-success);
     color: white;
+}
+
+/* Focus indicators for keyboard navigation (WCAG 2.4.7) */
+.btn:focus-visible,
+.btn-icon:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.specimen-card:focus-visible,
+.filter-select:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Remove focus outline on mouse click, keep for keyboard */
+.btn:focus:not(:focus-visible),
+.btn-icon:focus:not(:focus-visible),
+.specimen-card:focus:not(:focus-visible) {
+    outline: none;
 }
 
 /* ============================================================================
@@ -680,6 +709,10 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     animation: toast-in 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    max-width: 90vw;
 }
 
 .toast.success {
@@ -694,6 +727,27 @@ body {
     background: var(--color-warning);
 }
 
+.toast-dismiss {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.toast-dismiss:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 @keyframes toast-in {
     from {
         transform: translateX(-50%) translateY(100px);
@@ -703,6 +757,46 @@ body {
         transform: translateX(-50%) translateY(0);
         opacity: 1;
     }
+}
+
+/* ============================================================================
+   Accessibility Utilities
+   ============================================================================ */
+
+/* Screen reader only - hides visually but keeps accessible to screen readers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Offline status indicator */
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-warning);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: center;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.offline-hint {
+    font-size: 0.75rem;
+    opacity: 0.9;
 }
 
 /* ============================================================================

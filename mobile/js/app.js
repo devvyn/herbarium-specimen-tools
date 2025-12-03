@@ -42,6 +42,10 @@ createApp({
                 message: '',
                 type: 'info',
             },
+            toastTimeout: null,
+
+            // Network status
+            isOnline: navigator.onLine,
         };
     },
 
@@ -59,6 +63,17 @@ createApp({
 
         // Add iOS touch handling
         this.setupTouchHandling();
+
+        // Listen for online/offline events (accessibility)
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.showToast('Connection restored', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.showToast('Working offline', 'info');
+        });
     },
 
     methods: {
@@ -159,6 +174,18 @@ createApp({
          */
         async quickAction(action) {
             if (!this.currentSpecimen || this.actionLoading) return;
+
+            // Confirmation dialogs for accessibility (WCAG 3.3.4 Error Prevention)
+            const confirmationMessages = {
+                approve: 'Approve this specimen? This will mark it as reviewed and approved.',
+                reject: 'Reject this specimen? This action can be reversed later.',
+                flag: 'Flag this specimen for expert review?'
+            };
+
+            const shouldProceed = confirm(confirmationMessages[action]);
+            if (!shouldProceed) {
+                return; // User cancelled
+            }
 
             try {
                 this.actionLoading = true;
@@ -276,9 +303,23 @@ createApp({
                 type,
             };
 
-            setTimeout(() => {
-                this.toast.show = false;
-            }, 3000);
+            // Clear existing timeout
+            if (this.toastTimeout) {
+                clearTimeout(this.toastTimeout);
+            }
+
+            // Extended timeout for accessibility (WCAG 2.2.1)
+            this.toastTimeout = setTimeout(() => {
+                this.dismissToast();
+            }, 10000); // 3s → 10s for users with cognitive disabilities
+        },
+
+        dismissToast() {
+            this.toast.show = false;
+            if (this.toastTimeout) {
+                clearTimeout(this.toastTimeout);
+                this.toastTimeout = null;
+            }
         },
 
         /**
