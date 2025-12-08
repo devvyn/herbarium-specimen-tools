@@ -29,7 +29,13 @@ class ReviewStatus(Enum):
 
     PENDING = "pending"
     IN_REVIEW = "in_review"
-    APPROVED = "approved"
+    NEEDS_CORRECTION = "needs_correction"
+    DRAFT_CORRECTED = "draft_corrected"        # Curator corrected, ready for entrant
+    ENTRANT_REVIEW = "entrant_review"          # Assigned to data entrant
+    ENTRANT_APPROVED = "entrant_approved"      # Entrant approved corrections
+    READY_FOR_EXPORT = "ready_for_export"      # Final pre-export state
+    EXPORTED = "exported"                      # Successfully exported
+    APPROVED = "approved"                      # Legacy/generic approval
     REJECTED = "rejected"
 
 
@@ -84,6 +90,15 @@ class SpecimenReview:
     reviewed_at: Optional[str] = None
     corrections: Dict = dataclass_field(default_factory=dict)
     notes: Optional[str] = None
+
+    # Entrant workflow tracking
+    assigned_to: Optional[str] = None  # Data entrant assigned to review
+    entrant_reviewed_by: Optional[str] = None  # Who performed entrant review
+    entrant_reviewed_at: Optional[str] = None
+    entrant_approved: bool = False  # Did entrant approve?
+    entrant_notes: Optional[str] = None
+    supervisor_approved_by: Optional[str] = None  # Final supervisor approval
+    supervisor_approved_at: Optional[str] = None
 
     # Issues
     critical_issues: List[str] = dataclass_field(default_factory=list)
@@ -190,6 +205,73 @@ class SpecimenReview:
         """Check if specimen needs to be exported."""
         return self.export_status in ["not_exported", "modified_after_export"]
 
+    def assign_to_entrant(self, entrant_username: str, assigned_by: str):
+        """
+        Assign specimen to data entrant for review.
+
+        Args:
+            entrant_username: Username of data entrant
+            assigned_by: Username of curator/supervisor making assignment
+        """
+        self.assigned_to = entrant_username
+        self.status = ReviewStatus.ENTRANT_REVIEW
+        self.reviewed_by = assigned_by
+        self.reviewed_at = datetime.utcnow().isoformat() + "Z"
+
+    def entrant_approve(self, entrant_username: str, notes: Optional[str] = None):
+        """
+        Mark specimen as approved by data entrant.
+
+        Args:
+            entrant_username: Username of approving entrant
+            notes: Optional approval notes
+        """
+        self.entrant_reviewed_by = entrant_username
+        self.entrant_reviewed_at = datetime.utcnow().isoformat() + "Z"
+        self.entrant_approved = True
+        self.entrant_notes = notes
+        self.status = ReviewStatus.ENTRANT_APPROVED
+
+    def entrant_reject(self, entrant_username: str, notes: str):
+        """
+        Mark specimen as rejected by data entrant.
+
+        Args:
+            entrant_username: Username of rejecting entrant
+            notes: Required rejection reason
+        """
+        self.entrant_reviewed_by = entrant_username
+        self.entrant_reviewed_at = datetime.utcnow().isoformat() + "Z"
+        self.entrant_approved = False
+        self.entrant_notes = notes
+        self.status = ReviewStatus.NEEDS_CORRECTION
+
+    def supervisor_approve(self, supervisor_username: str):
+        """
+        Final supervisor approval - mark as ready for export.
+
+        Args:
+            supervisor_username: Username of approving supervisor
+        """
+        self.supervisor_approved_by = supervisor_username
+        self.supervisor_approved_at = datetime.utcnow().isoformat() + "Z"
+        self.status = ReviewStatus.READY_FOR_EXPORT
+
+    def submit_for_entrant_review(self, curator_username: str):
+        """
+        Submit corrected draft for entrant review.
+
+        Args:
+            curator_username: Username of curator submitting
+        """
+        self.reviewed_by = curator_username
+        self.reviewed_at = datetime.utcnow().isoformat() + "Z"
+        self.status = ReviewStatus.DRAFT_CORRECTED
+
+    def can_export(self) -> bool:
+        """Check if specimen is ready for export."""
+        return self.status == ReviewStatus.READY_FOR_EXPORT
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -233,6 +315,16 @@ class SpecimenReview:
                 "reviewed_at": self.reviewed_at,
                 "corrections": self.corrections,
                 "notes": self.notes,
+            },
+            "entrant_workflow": {
+                "assigned_to": self.assigned_to,
+                "entrant_reviewed_by": self.entrant_reviewed_by,
+                "entrant_reviewed_at": self.entrant_reviewed_at,
+                "entrant_approved": self.entrant_approved,
+                "entrant_notes": self.entrant_notes,
+                "supervisor_approved_by": self.supervisor_approved_by,
+                "supervisor_approved_at": self.supervisor_approved_at,
+                "can_export": self.can_export(),
             },
             "issues": {
                 "critical": self.critical_issues,
@@ -542,6 +634,103 @@ class ReviewEngine:
         logger.info(
             f"Updated review: {specimen_id} (status: {review.status.name}, flagged: {review.flagged})"
         )
+
+    def assign_to_entrant(self, specimen_id: str, entrant_username: str, assigned_by: str):
+        """
+        Assign specimen to data entrant for review.
+
+        Args:
+            specimen_id: Specimen identifier
+            entrant_username: Username of data entrant
+            assigned_by: Username of curator making assignment
+        """
+        review = self.reviews.get(specimen_id)
+        if not review:
+            logger.warning(f"Review not found: {specimen_id}")
+            return
+
+        review.assign_to_entrant(entrant_username, assigned_by)
+        logger.info(f"Assigned {specimen_id} to entrant {entrant_username} by {assigned_by}")
+
+    def entrant_approve(self, specimen_id: str, entrant_username: str, notes: Optional[str] = None):
+        """
+        Mark specimen as approved by data entrant.
+
+        Args:
+            specimen_id: Specimen identifier
+            entrant_username: Username of approving entrant
+            notes: Optional approval notes
+        """
+        review = self.reviews.get(specimen_id)
+        if not review:
+            logger.warning(f"Review not found: {specimen_id}")
+            return
+
+        review.entrant_approve(entrant_username, notes)
+        logger.info(f"Specimen {specimen_id} approved by entrant {entrant_username}")
+
+    def entrant_reject(self, specimen_id: str, entrant_username: str, notes: str):
+        """
+        Mark specimen as rejected by data entrant.
+
+        Args:
+            specimen_id: Specimen identifier
+            entrant_username: Username of rejecting entrant
+            notes: Required rejection reason
+        """
+        review = self.reviews.get(specimen_id)
+        if not review:
+            logger.warning(f"Review not found: {specimen_id}")
+            return
+
+        review.entrant_reject(entrant_username, notes)
+        logger.info(f"Specimen {specimen_id} rejected by entrant {entrant_username}: {notes}")
+
+    def supervisor_approve(self, specimen_id: str, supervisor_username: str):
+        """
+        Final supervisor approval - mark as ready for export.
+
+        Args:
+            specimen_id: Specimen identifier
+            supervisor_username: Username of approving supervisor
+        """
+        review = self.reviews.get(specimen_id)
+        if not review:
+            logger.warning(f"Review not found: {specimen_id}")
+            return
+
+        review.supervisor_approve(supervisor_username)
+        logger.info(f"Specimen {specimen_id} approved by supervisor {supervisor_username}, ready for export")
+
+    def submit_for_entrant_review(self, specimen_id: str, curator_username: str):
+        """
+        Submit corrected draft for entrant review.
+
+        Args:
+            specimen_id: Specimen identifier
+            curator_username: Username of curator submitting
+        """
+        review = self.reviews.get(specimen_id)
+        if not review:
+            logger.warning(f"Review not found: {specimen_id}")
+            return
+
+        review.submit_for_entrant_review(curator_username)
+        logger.info(f"Specimen {specimen_id} submitted for entrant review by {curator_username}")
+
+    def get_assigned_specimens(self, entrant_username: str) -> List[SpecimenReview]:
+        """Get all specimens assigned to a specific entrant."""
+        return [
+            review for review in self.reviews.values()
+            if review.assigned_to == entrant_username
+        ]
+
+    def get_ready_for_export(self) -> List[SpecimenReview]:
+        """Get all specimens ready for export."""
+        return [
+            review for review in self.reviews.values()
+            if review.status == ReviewStatus.READY_FOR_EXPORT
+        ]
 
     def get_statistics(self) -> dict:
         """Get review statistics with orthogonal dimensions."""
