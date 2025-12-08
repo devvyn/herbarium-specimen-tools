@@ -61,6 +61,9 @@ class SpecimenReview:
     converted_from_csv: bool = False
     provenance_history: List[dict] = dataclass_field(default_factory=list)
 
+    # Raw extraction (immutable original AI output)
+    raw_extraction: Optional[Dict] = None  # Set once at creation, never modified
+
     # GBIF validation
     gbif_taxonomy_verified: bool = False
     gbif_taxonomy_confidence: float = 0.0
@@ -86,6 +89,12 @@ class SpecimenReview:
     critical_issues: List[str] = dataclass_field(default_factory=list)
     warnings: List[str] = dataclass_field(default_factory=list)
 
+    # Export tracking
+    export_status: str = "not_exported"  # "not_exported", "exported", "modified_after_export"
+    last_export_timestamp: Optional[str] = None
+    export_count: int = 0
+    export_history: List[dict] = dataclass_field(default_factory=list)
+
     def calculate_quality_score(self):
         """Calculate overall quality score from components."""
         # Weighted combination of completeness and confidence
@@ -108,6 +117,78 @@ class SpecimenReview:
         # Minimal priority if excellent quality
         else:
             self.priority = ReviewPriority.MINIMAL
+
+    def apply_correction(
+        self, field: str, new_value: str, corrected_by: str, reason: Optional[str] = None
+    ):
+        """
+        Apply a correction to a field with full audit trail.
+
+        Args:
+            field: Darwin Core field name
+            new_value: Corrected value
+            corrected_by: Username of person making correction
+            reason: Optional reason for correction
+        """
+        # Store correction with metadata
+        self.corrections[field] = {
+            "value": new_value,
+            "corrected_by": corrected_by,
+            "corrected_at": datetime.utcnow().isoformat() + "Z",
+            "original_value": self.dwc_fields.get(field),
+            "was_ai_extracted": (
+                field in self.raw_extraction if self.raw_extraction else False
+            ),
+            "reason": reason,
+        }
+
+        # Update main fields
+        self.dwc_fields[field] = new_value
+
+        # Mark as needing re-export if previously exported
+        if self.export_status == "exported":
+            self.export_status = "modified_after_export"
+
+    def mark_exported(self, export_format: str, destination: str, exported_by: str):
+        """
+        Mark specimen as exported and record export metadata.
+
+        Args:
+            export_format: Export format (e.g., "DwC-A", "CSV", "GBIF")
+            destination: Export destination (e.g., "S3", "local", "GBIF portal")
+            exported_by: Username of person performing export
+        """
+        export_record = {
+            "export_timestamp": datetime.utcnow().isoformat() + "Z",
+            "export_format": export_format,
+            "destination": destination,
+            "exported_by": exported_by,
+            "data_snapshot": self.dwc_fields.copy(),
+            "corrections_count": len(self.corrections),
+        }
+
+        self.export_history.append(export_record)
+        self.export_status = "exported"
+        self.last_export_timestamp = export_record["export_timestamp"]
+        self.export_count += 1
+
+    def get_corrected_fields(self) -> List[str]:
+        """Get list of field names that have been corrected."""
+        return list(self.corrections.keys())
+
+    def get_uncorrected_fields(self) -> List[str]:
+        """Get list of field names that are still raw AI output."""
+        if not self.raw_extraction:
+            return []
+        return [f for f in self.raw_extraction.keys() if f not in self.corrections]
+
+    def has_corrections(self) -> bool:
+        """Check if any fields have been corrected."""
+        return len(self.corrections) > 0
+
+    def needs_export(self) -> bool:
+        """Check if specimen needs to be exported."""
+        return self.export_status in ["not_exported", "modified_after_export"]
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -156,6 +237,17 @@ class SpecimenReview:
             "issues": {
                 "critical": self.critical_issues,
                 "warnings": self.warnings,
+            },
+            "lifecycle": {
+                "raw_extraction": self.raw_extraction,
+                "has_corrections": self.has_corrections(),
+                "corrected_fields": self.get_corrected_fields(),
+                "uncorrected_fields": self.get_uncorrected_fields(),
+                "export_status": self.export_status,
+                "last_export_timestamp": self.last_export_timestamp,
+                "export_count": self.export_count,
+                "export_history": self.export_history,
+                "needs_export": self.needs_export(),
             },
         }
 
@@ -240,6 +332,7 @@ class ReviewEngine:
                         provenance_history=result.get(
                             "provenance_history", result.get("lineage", [])
                         ),
+                        raw_extraction=dwc_fields.copy(),  # Store immutable copy of original
                     )
 
                     # Calculate metrics
@@ -415,7 +508,22 @@ class ReviewEngine:
             return
 
         if corrections:
-            review.corrections.update(corrections)
+            # Apply corrections with full audit trail
+            for field, value in corrections.items():
+                # Handle both simple string values and correction metadata
+                if isinstance(value, dict) and "value" in value:
+                    review.apply_correction(
+                        field=field,
+                        new_value=value["value"],
+                        corrected_by=reviewed_by or "unknown",
+                        reason=value.get("reason")
+                    )
+                else:
+                    review.apply_correction(
+                        field=field,
+                        new_value=value,
+                        corrected_by=reviewed_by or "unknown"
+                    )
 
         if status:
             review.status = status
