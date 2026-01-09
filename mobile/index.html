@@ -207,26 +207,51 @@
                             @click="quickAction('approve')"
                             class="btn btn-success"
                             :disabled="actionLoading"
-                            aria-label="Approve specimen"
+                            aria-label="Approve: Data is correct, ready for export"
+                            title="Data is correct, include in DwC export"
                         >
                             ✓ Approve
+                        </button>
+                        <button
+                            @click="quickAction('reextract')"
+                            class="btn btn-warning"
+                            :disabled="actionLoading"
+                            aria-label="Re-extract: Image OK but extraction failed"
+                            title="Image is fine, but extraction needs to be re-run"
+                        >
+                            🔄 Re-extract
+                        </button>
+                        <button
+                            @click="quickAction('flag')"
+                            class="btn btn-secondary"
+                            :disabled="actionLoading"
+                            aria-label="Flag: Need expert review"
+                            title="Uncertain, need expert to review"
+                        >
+                            🚩 Flag
                         </button>
                         <button
                             @click="quickAction('reject')"
                             class="btn btn-danger"
                             :disabled="actionLoading"
-                            aria-label="Reject specimen"
+                            aria-label="Reject: Unusable, exclude from export"
+                            title="Data is unusable, exclude from DwC export"
                         >
                             ✗ Reject
                         </button>
-                        <button
-                            @click="quickAction('flag')"
-                            class="btn btn-warning"
-                            :disabled="actionLoading"
-                            aria-label="Flag specimen for review"
-                        >
-                            🚩 Flag
-                        </button>
+                    </div>
+
+                    <!-- Action Guide -->
+                    <div class="action-guide">
+                        <details>
+                            <summary>Action guide</summary>
+                            <ul>
+                                <li><strong>Approve</strong>: Data correct → include in export</li>
+                                <li><strong>Re-extract</strong>: Image OK, extraction failed → re-process</li>
+                                <li><strong>Flag</strong>: Uncertain → expert review needed</li>
+                                <li><strong>Reject</strong>: Unusable → exclude from export</li>
+                            </ul>
+                        </details>
                     </div>
 
                     <!-- Priority Control -->
@@ -244,6 +269,25 @@
                             <option value="LOW">Low</option>
                             <option value="MINIMAL">Minimal</option>
                         </select>
+                    </div>
+
+                    <!-- Provenance Summary -->
+                    <div v-if="currentSpecimen.provenance" class="provenance-summary">
+                        <h3>Extraction Info</h3>
+                        <div class="provenance-grid">
+                            <div class="provenance-item">
+                                <span class="provenance-label">Model</span>
+                                <span class="provenance-value">{{ formatModelName(currentSpecimen.provenance.model) }}</span>
+                            </div>
+                            <div class="provenance-item">
+                                <span class="provenance-label">Provider</span>
+                                <span class="provenance-value">{{ currentSpecimen.provenance.provider || 'Unknown' }}</span>
+                            </div>
+                            <div v-if="currentSpecimen.provenance.timestamp" class="provenance-item">
+                                <span class="provenance-label">Extracted</span>
+                                <span class="provenance-value">{{ formatDate(currentSpecimen.provenance.timestamp) }}</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Field Editor -->
@@ -286,6 +330,12 @@
                             <div v-if="fieldData.value" class="field-hint">
                                 AI suggested: {{ fieldData.value }}
                             </div>
+
+                            <!-- Zone hint for low-confidence fields -->
+                            <div v-if="fieldData.confidence < 0.7 && fieldData.zone_hint" class="zone-hint">
+                                <span class="zone-icon">📍</span>
+                                <span>Look in: {{ fieldData.zone_hint.description }}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -305,12 +355,25 @@
                         </div>
                     </div>
 
-                    <!-- Notes -->
+                    <!-- Review Feedback (workflow only, not exported) -->
                     <div class="notes-section">
-                        <h3>Notes</h3>
+                        <h3>Review Feedback</h3>
+                        <p class="notes-hint">Workflow notes for re-extraction or expert review. Not included in DwC export.</p>
+                        <textarea
+                            v-model="currentSpecimen.review.review_notes"
+                            placeholder="Instructions for re-extraction, questions for expert..."
+                            class="textarea"
+                            @blur="saveReviewNotes"
+                        ></textarea>
+                    </div>
+
+                    <!-- DwC Notes (included in export) -->
+                    <div class="notes-section">
+                        <h3>DwC Notes</h3>
+                        <p class="notes-hint">Canonical notes included in Darwin Core export (occurrenceRemarks).</p>
                         <textarea
                             v-model="currentSpecimen.review.notes"
-                            placeholder="Add notes..."
+                            placeholder="Notes to include in exported data..."
                             class="textarea"
                             @blur="saveNotes"
                         ></textarea>
@@ -336,9 +399,9 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="/js/api.js"></script>
-    <script src="/js/app.js"></script>
+    <!-- Scripts (versioned to bust cache) -->
+    <script src="/js/api.js?v=2"></script>
+    <script src="/js/app.js?v=2"></script>
 
     <!-- Service Worker Registration -->
     <script>

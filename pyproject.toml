@@ -3,7 +3,7 @@ name = "herbarium-specimen-tools"
 version = "0.1.0"
 description = "Open-source tools for herbarium digitization workflows"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 license = {text = "MIT"}
 authors = [{name = "devvyn", email = "noreply@github.com"}]
 keywords = ["herbarium", "digitization", "darwin-core", "specimens"]
@@ -50,6 +50,9 @@ Issues = "https://github.com/devvyn/herbarium-specimen-tools/issues"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
 
 [tool.ruff]
 line-length = 100

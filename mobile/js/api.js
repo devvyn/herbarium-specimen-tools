@@ -181,6 +181,12 @@ class HerbariumAPI {
         });
     }
 
+    async requestReextraction(specimenId, notes = null) {
+        return this.request(`/specimen/${specimenId}/request-reextraction?notes=${encodeURIComponent(notes || '')}`, {
+            method: 'POST',
+        });
+    }
+
     /**
      * Statistics
      */

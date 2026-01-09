@@ -86,10 +86,12 @@ class SpecimenReview:
     # Review tracking
     status: ReviewStatus = ReviewStatus.PENDING
     flagged: bool = False  # Independent attention marker
+    reextraction_requested: bool = False  # Request re-extraction with different params
     reviewed_by: Optional[str] = None
     reviewed_at: Optional[str] = None
     corrections: Dict = dataclass_field(default_factory=dict)
-    notes: Optional[str] = None
+    notes: Optional[str] = None  # General notes (exported with DwC data)
+    review_notes: Optional[str] = None  # Workflow feedback (not exported)
 
     # Entrant workflow tracking
     assigned_to: Optional[str] = None  # Data entrant assigned to review

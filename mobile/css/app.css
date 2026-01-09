@@ -497,6 +497,60 @@ body {
     margin-top: var(--spacing-xs);
 }
 
+/* Zone Hints for Low-Confidence Fields */
+.zone-hint {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-warning);
+    background: #fef3c7;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-sm);
+}
+
+.zone-icon {
+    font-size: var(--font-size-base);
+}
+
+/* Provenance Summary */
+.provenance-summary {
+    padding: var(--spacing-md);
+    background: var(--color-bg);
+    border-radius: var(--border-radius);
+    margin: var(--spacing-md);
+}
+
+.provenance-summary h3 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.provenance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.provenance-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.provenance-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.provenance-value {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    font-weight: 600;
+}
+
 /* GBIF Validation */
 .gbif-validation {
     padding: var(--spacing-md);
@@ -646,6 +700,40 @@ body {
 .btn-warning {
     background: var(--color-warning);
     color: white;
+}
+
+.btn-secondary {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+/* Action Guide */
+.action-guide {
+    margin: var(--spacing-md) 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.action-guide summary {
+    cursor: pointer;
+    color: var(--color-primary);
+}
+
+.action-guide ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.action-guide li {
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Notes hint text */
+.notes-hint {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+    font-style: italic;
 }
 
 .btn-icon {

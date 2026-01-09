@@ -7,8 +7,8 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
-            // Authentication
-            isAuthenticated: false,
+            // Authentication (bypassed for local single-user mode)
+            isAuthenticated: true,
             username: '',
             password: '',
             loginError: '',
@@ -50,13 +50,8 @@ createApp({
     },
 
     async mounted() {
-        // Check authentication
-        if (herbariumAPI.isAuthenticated()) {
-            this.isAuthenticated = true;
-            await this.initialize();
-        } else {
-            this.loading = false;
-        }
+        // Local single-user mode: load data directly (no auth required)
+        await this.initialize();
 
         // Add keyboard shortcuts
         this.setupKeyboardShortcuts();
@@ -116,6 +111,9 @@ createApp({
          * Queue Management
          */
         async loadQueue() {
+            // Reset pagination when filters change (prevents empty results bug)
+            this.filters.offset = 0;
+
             try {
                 const data = await herbariumAPI.getQueue(this.filters);
                 this.queue = data.specimens;
@@ -177,9 +175,10 @@ createApp({
 
             // Confirmation dialogs for accessibility (WCAG 3.3.4 Error Prevention)
             const confirmationMessages = {
-                approve: 'Approve this specimen? This will mark it as reviewed and approved.',
-                reject: 'Reject this specimen? This action can be reversed later.',
-                flag: 'Flag this specimen for expert review?'
+                approve: 'Approve for DwC export? Data will be included in final dataset.',
+                reject: 'Reject specimen? Data will be excluded from export.',
+                flag: 'Flag for expert review? Specimen will be marked for senior staff.',
+                reextract: 'Request re-extraction? Image OK but extraction needs re-running.'
             };
 
             const shouldProceed = confirm(confirmationMessages[action]);
@@ -190,16 +189,20 @@ createApp({
             try {
                 this.actionLoading = true;
                 const specimenId = this.currentSpecimen.id;
+                const reviewNotes = this.currentSpecimen.review.review_notes || '';
 
                 if (action === 'approve') {
                     await herbariumAPI.approveSpecimen(specimenId);
-                    this.showToast('Specimen approved', 'success');
+                    this.showToast('Approved for export', 'success');
                 } else if (action === 'reject') {
-                    await herbariumAPI.rejectSpecimen(specimenId, this.currentSpecimen.review.notes);
-                    this.showToast('Specimen rejected', 'info');
+                    await herbariumAPI.rejectSpecimen(specimenId, reviewNotes);
+                    this.showToast('Rejected - excluded from export', 'info');
                 } else if (action === 'flag') {
-                    await herbariumAPI.flagSpecimen(specimenId, this.currentSpecimen.review.notes);
-                    this.showToast('Specimen flagged', 'warning');
+                    await herbariumAPI.flagSpecimen(specimenId, reviewNotes);
+                    this.showToast('Flagged for expert review', 'warning');
+                } else if (action === 'reextract') {
+                    await herbariumAPI.requestReextraction(specimenId, reviewNotes);
+                    this.showToast('Re-extraction requested', 'info');
                 }
 
                 // Refresh queue and go back
@@ -258,9 +261,22 @@ createApp({
                 await herbariumAPI.updateSpecimen(this.currentSpecimen.id, {
                     notes: this.currentSpecimen.review.notes,
                 });
-                this.showToast('Notes saved', 'success');
+                this.showToast('DwC notes saved', 'success');
             } catch (error) {
                 this.showToast(`Error saving notes: ${error.message}`, 'error');
+            }
+        },
+
+        async saveReviewNotes() {
+            if (!this.currentSpecimen) return;
+
+            try {
+                await herbariumAPI.updateSpecimen(this.currentSpecimen.id, {
+                    review_notes: this.currentSpecimen.review.review_notes,
+                });
+                this.showToast('Review feedback saved', 'success');
+            } catch (error) {
+                this.showToast(`Error saving feedback: ${error.message}`, 'error');
             }
         },
 
@@ -284,7 +300,7 @@ createApp({
 
         getConfidenceClass(confidence) {
             if (confidence >= 0.8) return 'high';
-            if (confidence >= 0.5) return 'medium';
+            if (confidence >= 0.7) return 'medium';  // Aligned with low-confidence highlight threshold
             return 'low';
         },
 
@@ -294,6 +310,29 @@ createApp({
                 .replace(/([A-Z])/g, ' $1')
                 .replace(/^./, str => str.toUpperCase())
                 .trim();
+        },
+
+        formatModelName(model) {
+            if (!model) return 'Unknown';
+            // Extract the model name from full path (e.g., "qwen/qwen-2.5-vl-72b-instruct:free" → "qwen-2.5-vl-72b")
+            const parts = model.split('/');
+            const name = parts[parts.length - 1];
+            // Remove :free or :paid suffix
+            return name.replace(/:(free|paid)$/, '').replace('-instruct', '');
+        },
+
+        formatDate(timestamp) {
+            if (!timestamp) return 'Unknown';
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                });
+            } catch {
+                return timestamp;
+            }
         },
 
         showToast(message, type = 'info') {
