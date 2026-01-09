@@ -7,6 +7,7 @@ Shared foundation for herbarium digitization tools:
 - protocols: OCREngine, Extractor, Storage interfaces
 - storage: JSON, SQLite, Postgres backends
 - engines: Protocol-conforming OCR and extraction adapters
+- events: Event sourcing for audit trails and replay
 
 This module provides the common infrastructure used by both
 herbarium-specimen-tools (review workflow) and extraction pipelines.
@@ -46,6 +47,19 @@ from .engines import (
     get_engine_registry,
 )
 
+from .events import (
+    Event,
+    EventType,
+    EventStore,
+    EventSourcedStorage,
+    SpecimenCreated,
+    SpecimenUpdated,
+    StatusChanged,
+    FieldCorrected,
+    ExtractionCompleted,
+    ValidationCompleted,
+)
+
 __all__ = [
     # Provenance
     "capture_git_provenance",
@@ -71,4 +85,15 @@ __all__ = [
     "RulesEngineAdapter",
     "EngineRegistry",
     "get_engine_registry",
+    # Events
+    "Event",
+    "EventType",
+    "EventStore",
+    "EventSourcedStorage",
+    "SpecimenCreated",
+    "SpecimenUpdated",
+    "StatusChanged",
+    "FieldCorrected",
+    "ExtractionCompleted",
+    "ValidationCompleted",
 ]
