@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """
-Local Development Server for Herbarium Review
+Herbarium Review Server
 
-Single-command server for reviewing herbarium specimens locally.
-No authentication required. Loads data from AAFC extraction output.
+Single-command server for reviewing herbarium specimens.
+Supports both local development and production modes.
 
 Usage:
-    python mobile/run_local_server.py
-    python mobile/run_local_server.py --data ~/path/to/raw.jsonl
-    python mobile/run_local_server.py --port 8080
+    python mobile/run_server.py                    # Local dev mode (default)
+    python mobile/run_server.py --mode production  # Production with auth
+    python mobile/run_server.py --data ~/path/to/raw.jsonl
+    python mobile/run_server.py --port 8080
 """
 
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -104,20 +106,42 @@ def apply_review_state(specimens: Dict[str, SpecimenReview], state: Dict):
     logger.info(f"Applied review state for {len(state)} specimens")
 
 
-def create_app(data_path: Optional[Path] = None, images_path: Optional[Path] = None) -> FastAPI:
-    """Create FastAPI app for local development."""
+def create_app(
+    data_path: Optional[Path] = None,
+    images_path: Optional[Path] = None,
+    mode: Literal["local", "production"] = "local",
+) -> FastAPI:
+    """Create FastAPI app with mode-specific configuration.
+
+    Args:
+        data_path: Path to raw.jsonl extraction file
+        images_path: Path to specimen images directory
+        mode: Server mode - 'local' (no auth) or 'production' (requires auth)
+    """
     global specimens, image_dir, image_resolver
 
+    is_production = mode == "production"
+
     app = FastAPI(
-        title="Herbarium Review (Local)",
-        description="Local development server for herbarium specimen review",
+        title="Herbarium Review",
+        description="Server for herbarium specimen review",
         version="1.0.0",
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
     )
 
-    # CORS for local development
+    # Configure CORS based on mode
+    if is_production:
+        allowed_origins = os.environ.get("ALLOWED_ORIGINS", "").split(",")
+        allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+        if not allowed_origins:
+            allowed_origins = []  # Strict: no CORS if not configured
+    else:
+        allowed_origins = ["*"]  # Allow all for local dev
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -474,7 +498,13 @@ def get_zone_description(vertical: VerticalZone, horizontal: HorizontalZone) -> 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Local development server for herbarium specimen review"
+        description="Herbarium specimen review server"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["local", "production"],
+        default="local",
+        help="Server mode: 'local' (no auth) or 'production' (requires auth)",
     )
     parser.add_argument(
         "--data",
@@ -500,14 +530,32 @@ def main():
 
     args = parser.parse_args()
 
-    app = create_app(data_path=args.data, images_path=args.images)
+    # Production mode checks
+    if args.mode == "production":
+        missing = []
+        if not os.environ.get("JWT_SECRET_KEY"):
+            missing.append("JWT_SECRET_KEY")
+        if not os.environ.get("AUTH_USERS"):
+            missing.append("AUTH_USERS")
+        if missing:
+            logger.error(f"Production mode requires environment variables: {', '.join(missing)}")
+            logger.error("See docs/SECURITY.md for configuration instructions")
+            sys.exit(1)
 
+    app = create_app(data_path=args.data, images_path=args.images, mode=args.mode)
+
+    mode_label = "Production" if args.mode == "production" else "Local Development"
     print(f"\n{'='*60}")
-    print(f"  Herbarium Review Server (Local Development)")
+    print(f"  Herbarium Review Server ({mode_label})")
     print(f"{'='*60}")
     print(f"  URL: http://{args.host}:{args.port}")
+    print(f"  Mode: {args.mode}")
     print(f"  Specimens loaded: {len(specimens)}")
     print(f"  Images: {image_dir or 'Not configured'}")
+    if args.mode == "local":
+        print(f"  API docs: http://{args.host}:{args.port}/docs")
+    else:
+        print(f"  API docs: Disabled (production mode)")
     print(f"{'='*60}\n")
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

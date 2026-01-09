@@ -86,7 +86,7 @@ def app_and_state_file(test_data_dir, monkeypatch):
     state_file = tmp_path / "review_state.json"
 
     # Import after patching
-    import mobile.run_local_server as server_module
+    import mobile.run_server as server_module
     monkeypatch.setattr(server_module, "REVIEW_STATE_FILE", state_file)
     monkeypatch.setattr(server_module, "DEFAULT_AAFC_OUTPUT", data_dir.parent)
 
@@ -284,7 +284,7 @@ class TestStatePersistence:
         tmp_path, data_dir, images_dir = test_data_dir
         state_file = tmp_path / "review_state.json"
 
-        import mobile.run_local_server as server_module
+        import mobile.run_server as server_module
         monkeypatch.setattr(server_module, "REVIEW_STATE_FILE", state_file)
 
         from src.data import loader
@@ -347,7 +347,7 @@ class TestStatePersistence:
         tmp_path, data_dir, images_dir = test_data_dir
         state_file = tmp_path / "review_state.json"
 
-        import mobile.run_local_server as server_module
+        import mobile.run_server as server_module
         monkeypatch.setattr(server_module, "REVIEW_STATE_FILE", state_file)
 
         from src.data import loader
@@ -399,7 +399,7 @@ class TestStatePersistence:
         tmp_path, data_dir, images_dir = test_data_dir
         state_file = tmp_path / "review_state.json"
 
-        import mobile.run_local_server as server_module
+        import mobile.run_server as server_module
         monkeypatch.setattr(server_module, "REVIEW_STATE_FILE", state_file)
 
         from src.data import loader
