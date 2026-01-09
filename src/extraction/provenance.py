@@ -1,20 +1,36 @@
 """
-Comprehensive provenance tracking for extraction pipeline.
+Extraction-specific provenance tracking.
 
-Tracks:
-- Which model extracted which field
-- Re-extraction events (confidence routing)
-- Validation sources (GBIF cache vs API)
-- Processing costs and timing
-- Code/prompt versions
+This module provides field-level and specimen-level provenance tracking
+for the extraction pipeline. It builds on the core provenance utilities.
+
+For generic provenance utilities (git capture, manifests), use:
+    from src.core.provenance import capture_git_provenance, create_manifest
+
+This module adds:
+- FieldProvenance: Track how each DwC field was extracted
+- ExtractionProvenance: Complete provenance for a specimen extraction
+- Cost estimation utilities
 """
 
-import hashlib
-import time
-from dataclasses import dataclass, field, asdict
+import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from pathlib import Path
+
+# Re-export core provenance utilities for backward compatibility
+from src.core.provenance import (
+    capture_git_provenance,
+    capture_system_info,
+    create_manifest,
+    get_code_version,
+    get_content_hash as get_prompt_hash,  # Alias for backward compat
+    save_manifest,
+    track_provenance,
+    validate_reproducibility,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -226,29 +242,6 @@ class ExtractionProvenance:
         }
 
 
-def get_code_version() -> str:
-    """Get current git commit hash for version tracking."""
-    try:
-        import subprocess
-
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            cwd=Path(__file__).parent.parent.parent,  # repo root
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()[:8]  # Short hash
-    except Exception:
-        pass
-    return "unknown"
-
-
-def get_prompt_hash(prompt_text: str) -> str:
-    """Get hash of prompt for version tracking."""
-    return hashlib.sha256(prompt_text.encode()).hexdigest()[:8]
-
-
 def create_provenance(
     image_path: str,
     specimen_id: str,
@@ -265,8 +258,8 @@ def create_provenance(
     Returns:
         ExtractionProvenance instance
     """
-    import sys
     import platform
+    import sys
 
     return ExtractionProvenance(
         image_path=image_path,
