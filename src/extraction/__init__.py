@@ -13,6 +13,13 @@ from .provenance import (
     estimate_extraction_cost,
     get_code_version,
     get_prompt_hash,
+    # AAFC batch manifest utilities
+    capture_git_provenance,
+    capture_system_info,
+    create_manifest,
+    save_manifest,
+    validate_reproducibility,
+    track_provenance,
 )
 
 __all__ = [
@@ -23,4 +30,11 @@ __all__ = [
     "estimate_extraction_cost",
     "get_code_version",
     "get_prompt_hash",
+    # AAFC batch manifest utilities
+    "capture_git_provenance",
+    "capture_system_info",
+    "create_manifest",
+    "save_manifest",
+    "validate_reproducibility",
+    "track_provenance",
 ]

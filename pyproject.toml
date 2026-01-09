@@ -66,3 +66,22 @@ ignore = ["E501", "B008"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-ra -q --strict-markers"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pygbif.*",
+    "passlib.*",
+]
+ignore_missing_imports = true

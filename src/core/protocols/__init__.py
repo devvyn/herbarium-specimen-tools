@@ -6,6 +6,75 @@ enabling pluggable OCR engines, extractors, and storage backends.
 
 Uses typing.Protocol for structural subtyping - implementations don't need
 to explicitly inherit, they just need to implement the required methods.
+
+## Engine Contracts
+
+### OCREngine Protocol
+
+Required properties:
+- `name: str` - Unique identifier for provenance tracking (e.g., "apple-vision")
+- `is_available: bool` - Runtime availability check
+
+Required methods:
+- `extract_text(image_path: Path) -> OCRResult` - Main OCR extraction
+
+Implementation notes:
+- Must handle missing files gracefully (return empty OCRResult with error in metadata)
+- Should include cost_usd in metadata (0.0 for free engines)
+- regions list should contain bounding box info when available
+
+Example:
+    class MyOCREngine:
+        @property
+        def name(self) -> str:
+            return "my-ocr"
+
+        @property
+        def is_available(self) -> bool:
+            return _check_dependencies()
+
+        def extract_text(self, image_path: Path) -> OCRResult:
+            ...
+
+### FieldExtractor Protocol
+
+Required properties:
+- `name: str` - Unique identifier for provenance
+- `model: str` - Model identifier (e.g., "gpt-4o-mini", "regex-patterns-v1")
+- `provider: str` - Provider name (e.g., "openai", "anthropic", "local")
+
+Required methods:
+- `extract_fields(image_path: Path, ocr_text: Optional[str] = None) -> ExtractionResult`
+
+Implementation notes:
+- Can accept pre-extracted OCR text for hybrid pipelines
+- If text-only extractor, return empty ExtractionResult when ocr_text is None
+- Fields should include value, confidence, and extraction_method
+
+### SpecimenStorage Protocol
+
+Required methods:
+- `get(specimen_id: str) -> Optional[SpecimenData]`
+- `put(specimen: SpecimenData) -> None`
+- `delete(specimen_id: str) -> bool`
+- `list(status?, priority?, limit?, offset?) -> List[SpecimenData]`
+- `count(status?, priority?) -> int`
+
+Optional methods:
+- `load_from_jsonl(path: Path) -> int` - Bulk loading
+- `sync() -> None` - Force persistence
+- `close() -> None` - Cleanup resources
+
+### ValidationService Protocol
+
+Required properties:
+- `name: str` - Service identifier (e.g., "gbif", "ipni")
+
+Required methods:
+- `validate_taxonomy(scientific_name: str) -> Dict[str, Any]`
+- `validate_locality(country?, state_province?, locality?) -> Dict[str, Any]`
+
+Return dicts must include: valid, issues, source, cache_hit
 """
 
 from dataclasses import dataclass

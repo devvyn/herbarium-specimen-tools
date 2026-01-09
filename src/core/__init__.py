@@ -6,6 +6,7 @@ Shared foundation for herbarium digitization tools:
 - schema: Darwin Core schema management
 - protocols: OCREngine, Extractor, Storage interfaces
 - storage: JSON, SQLite, Postgres backends
+- engines: Protocol-conforming OCR and extraction adapters
 
 This module provides the common infrastructure used by both
 herbarium-specimen-tools (review workflow) and extraction pipelines.
@@ -28,6 +29,23 @@ from .schema import (
     DwcRecord,
 )
 
+from .protocols import (
+    OCRResult,
+    ExtractionResult,
+    OCREngine,
+    FieldExtractor,
+    SpecimenData,
+    SpecimenStorage,
+    ValidationService,
+)
+
+from .engines import (
+    AppleVisionAdapter,
+    RulesEngineAdapter,
+    EngineRegistry,
+    get_engine_registry,
+)
+
 __all__ = [
     # Provenance
     "capture_git_provenance",
@@ -40,4 +58,17 @@ __all__ = [
     "DWC_REQUIRED_FIELDS",
     "DWC_ALL_FIELDS",
     "DwcRecord",
+    # Protocols
+    "OCRResult",
+    "ExtractionResult",
+    "OCREngine",
+    "FieldExtractor",
+    "SpecimenData",
+    "SpecimenStorage",
+    "ValidationService",
+    # Engines
+    "AppleVisionAdapter",
+    "RulesEngineAdapter",
+    "EngineRegistry",
+    "get_engine_registry",
 ]
