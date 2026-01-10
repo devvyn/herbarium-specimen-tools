@@ -175,6 +175,7 @@ class SpecimenData:
     status: str
     priority: str
     metadata: Dict[str, Any]
+    ocr_regions: Optional[List[Dict[str, Any]]] = None  # Bounding boxes from OCR
 
 
 @runtime_checkable
