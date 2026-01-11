@@ -44,11 +44,36 @@ logger = logging.getLogger(__name__)
 
 # In-memory specimen store (loaded at startup)
 specimens: Dict[str, SpecimenReview] = {}
+ocr_regions: Dict[str, List[Dict]] = {}  # OCR bounding boxes per specimen
 image_dir: Optional[Path] = None
 image_resolver: Optional[HerbariumImageResolver] = None
 
 # Review state persistence
 REVIEW_STATE_FILE = Path(__file__).parent.parent / "data" / "review_state.json"
+
+
+def load_ocr_regions(enriched_path: Path) -> Dict[str, List[Dict]]:
+    """Load OCR regions from enriched JSONL file."""
+    regions = {}
+    if not enriched_path.exists():
+        logger.warning(f"Enriched JSONL not found: {enriched_path}")
+        return regions
+
+    try:
+        with open(enriched_path) as f:
+            for line in f:
+                if line.strip():
+                    data = json.loads(line)
+                    # Extract specimen ID from image filename
+                    image = data.get("image", "")
+                    specimen_id = Path(image).stem if image else None
+                    if specimen_id and "ocr_regions" in data:
+                        regions[specimen_id] = data["ocr_regions"]
+        logger.info(f"Loaded OCR regions for {len(regions)} specimens")
+    except Exception as e:
+        logger.error(f"Error loading OCR regions: {e}")
+
+    return regions
 
 
 def load_review_state() -> Dict:
@@ -148,6 +173,7 @@ def create_app(
     )
 
     # Load specimen data
+    global ocr_regions
     try:
         specimen_list = load_specimens_for_review(data_path)
         specimens = {s.specimen_id: s for s in specimen_list}
@@ -157,6 +183,10 @@ def create_app(
         review_state = load_review_state()
         if review_state:
             apply_review_state(specimens, review_state)
+
+        # Load OCR regions from enriched JSONL (if available)
+        enriched_path = data_path.parent / "enriched.jsonl"
+        ocr_regions = load_ocr_regions(enriched_path)
     except FileNotFoundError as e:
         logger.error(f"Failed to load specimens: {e}")
         specimens = {}
@@ -477,6 +507,8 @@ def specimen_to_detail_dict(s: SpecimenReview) -> dict:
             "timestamp": s.extraction_timestamp,
             "history": s.provenance_history if hasattr(s, "provenance_history") else [],
         },
+        # OCR regions with bounding boxes for visual overlay
+        "ocr_regions": ocr_regions.get(s.specimen_id, []),
     }
 
 

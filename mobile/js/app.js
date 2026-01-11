@@ -20,6 +20,15 @@ createApp({
             imageZoomed: false,
             actionLoading: false,
 
+            // OCR Overlay State
+            showOcrRegions: false,
+            hoverRegion: null,
+            highlightedRegionIndex: null,
+            imageWidth: 1000,
+            imageHeight: 1000,
+            tooltipX: 0,
+            tooltipY: 0,
+
             // Data
             queue: [],
             currentSpecimen: null,
@@ -69,6 +78,25 @@ createApp({
             this.isOnline = false;
             this.showToast('Working offline', 'info');
         });
+    },
+
+    computed: {
+        /**
+         * Check if current specimen has OCR regions
+         */
+        hasOcrRegions() {
+            return this.currentSpecimen?.ocr_regions?.length > 0;
+        },
+
+        /**
+         * Tooltip positioning style
+         */
+        tooltipStyle() {
+            return {
+                left: this.tooltipX + 'px',
+                top: this.tooltipY + 'px',
+            };
+        },
     },
 
     methods: {
@@ -160,6 +188,11 @@ createApp({
 
                 this.currentView = 'specimen';
                 this.imageZoomed = false;
+
+                // Reset OCR overlay state for new specimen
+                this.showOcrRegions = false;
+                this.highlightedRegionIndex = null;
+                this.hoverRegion = null;
             } catch (error) {
                 this.showToast(`Error loading specimen: ${error.message}`, 'error');
             } finally {
@@ -289,6 +322,83 @@ createApp({
 
         getImageUrl(specimenId) {
             return herbariumAPI.getImageUrl(specimenId);
+        },
+
+        /**
+         * OCR Overlay
+         */
+        toggleOcrOverlay() {
+            this.showOcrRegions = !this.showOcrRegions;
+            this.highlightedRegionIndex = null;
+            this.hoverRegion = null;
+        },
+
+        onImageLoad(event) {
+            // Capture actual rendered image dimensions for SVG viewBox
+            const img = event.target;
+            this.imageWidth = img.naturalWidth || img.width || 1000;
+            this.imageHeight = img.naturalHeight || img.height || 1000;
+        },
+
+        showRegionTooltip(region, event) {
+            // Position tooltip near click point
+            const container = this.$refs.imageContainer;
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                this.tooltipX = event.clientX - rect.left;
+                this.tooltipY = event.clientY - rect.top;
+            }
+
+            // Find and highlight this region
+            const index = this.currentSpecimen.ocr_regions.indexOf(region);
+            this.highlightedRegionIndex = index;
+
+            // Show toast with region text for easy copy
+            this.showToast(`OCR: "${region.text}"`, 'info');
+
+            // Clear highlight after animation
+            setTimeout(() => {
+                this.highlightedRegionIndex = null;
+            }, 2000);
+        },
+
+        highlightMatchingRegions(fieldValue) {
+            if (!this.showOcrRegions || !this.hasOcrRegions || !fieldValue) return;
+
+            // Find regions whose text matches or contains the field value
+            const searchValue = fieldValue.toLowerCase().trim();
+            const regions = this.currentSpecimen.ocr_regions;
+
+            // Try exact match first, then partial match
+            let matchIndex = regions.findIndex(r =>
+                r.text.toLowerCase().trim() === searchValue
+            );
+
+            if (matchIndex === -1) {
+                // Try partial match
+                matchIndex = regions.findIndex(r =>
+                    r.text.toLowerCase().includes(searchValue) ||
+                    searchValue.includes(r.text.toLowerCase())
+                );
+            }
+
+            if (matchIndex !== -1) {
+                this.highlightedRegionIndex = matchIndex;
+                this.showToast(`Found: "${regions[matchIndex].text}"`, 'info');
+
+                // Scroll to image if needed
+                const imageContainer = this.$refs.imageContainer;
+                if (imageContainer) {
+                    imageContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+                // Clear highlight after animation
+                setTimeout(() => {
+                    this.highlightedRegionIndex = null;
+                }, 2500);
+            } else {
+                this.showToast('No matching OCR region found', 'warning');
+            }
         },
 
         /**

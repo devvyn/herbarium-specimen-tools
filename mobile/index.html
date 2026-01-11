@@ -190,14 +190,66 @@
             <div v-else-if="currentView === 'specimen'" class="specimen-view">
                 <div v-if="currentSpecimen" class="specimen-detail">
                     <!-- Image Viewer -->
-                    <div class="image-container">
+                    <div class="image-container" ref="imageContainer">
                         <img
                             :src="getImageUrl(currentSpecimen.id)"
                             :alt="currentSpecimen.id"
                             class="specimen-image"
                             @click="toggleImageZoom"
+                            @load="onImageLoad"
                             :class="{ 'zoomed': imageZoomed }"
+                            ref="specimenImage"
                         >
+
+                        <!-- OCR Toggle Button -->
+                        <button
+                            v-if="hasOcrRegions"
+                            @click.stop="toggleOcrOverlay"
+                            class="ocr-toggle"
+                            :class="{ active: showOcrRegions }"
+                            :aria-pressed="showOcrRegions"
+                            aria-label="Toggle OCR region overlay"
+                        >
+                            <span class="ocr-toggle-icon">{{ showOcrRegions ? '👁' : '👁‍🗨' }}</span>
+                            <span>{{ showOcrRegions ? 'Hide' : 'Show' }} OCR</span>
+                        </button>
+
+                        <!-- OCR Regions SVG Overlay -->
+                        <svg
+                            v-if="showOcrRegions && hasOcrRegions"
+                            class="ocr-overlay"
+                            :viewBox="'0 0 ' + imageWidth + ' ' + imageHeight"
+                            preserveAspectRatio="none"
+                        >
+                            <rect
+                                v-for="(region, index) in currentSpecimen.ocr_regions"
+                                :key="index"
+                                :x="region.bounds.x * imageWidth"
+                                :y="(1 - region.bounds.y - region.bounds.height) * imageHeight"
+                                :width="region.bounds.width * imageWidth"
+                                :height="region.bounds.height * imageHeight"
+                                class="ocr-region"
+                                :class="[
+                                    'confidence-' + getConfidenceClass(region.confidence),
+                                    { highlighted: highlightedRegionIndex === index }
+                                ]"
+                                @click.stop="showRegionTooltip(region, $event)"
+                                @mouseenter="hoverRegion = region"
+                                @mouseleave="hoverRegion = null"
+                            />
+                        </svg>
+
+                        <!-- OCR Region Tooltip -->
+                        <div
+                            v-if="hoverRegion && showOcrRegions"
+                            class="ocr-tooltip"
+                            :style="tooltipStyle"
+                        >
+                            <div><strong>{{ hoverRegion.text }}</strong></div>
+                            <div>Confidence: {{ Math.round(hoverRegion.confidence * 100) }}%</div>
+                            <div v-if="hoverRegion.zone">Zone: {{ hoverRegion.zone.vertical }}-{{ hoverRegion.zone.horizontal }}</div>
+                        </div>
+
                         <div class="image-hint">Tap to zoom</div>
                     </div>
 
@@ -298,7 +350,11 @@
                             v-for="(fieldData, fieldName) in currentSpecimen.fields"
                             :key="fieldName"
                             class="field-item"
-                            :class="{ 'low-confidence': fieldData.confidence < 0.7 }"
+                            :class="{
+                                'low-confidence': fieldData.confidence < 0.7,
+                                'ocr-linkable': showOcrRegions && hasOcrRegions
+                            }"
+                            @click="highlightMatchingRegions(fieldData.value)"
                         >
                             <div class="field-header">
                                 <label class="field-label">{{ formatFieldName(fieldName) }}</label>
@@ -400,8 +456,8 @@
     </div>
 
     <!-- Scripts (versioned to bust cache) -->
-    <script src="/js/api.js?v=2"></script>
-    <script src="/js/app.js?v=2"></script>
+    <script src="/js/api.js?v=3"></script>
+    <script src="/js/app.js?v=3"></script>
 
     <!-- Service Worker Registration -->
     <script>
