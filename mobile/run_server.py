@@ -296,9 +296,15 @@ def create_app(
 
     @app.get("/api/v1/statistics")
     async def get_statistics():
-        """Get queue statistics."""
+        """Get queue statistics including correction metrics."""
         status_counts = {}
         priority_counts = {}
+        correction_stats = {
+            "specimens_with_corrections": 0,
+            "total_field_corrections": 0,
+            "correction_types": {"accept": 0, "edit": 0, "clear": 0},
+            "fields_corrected": {},
+        }
 
         for s in specimens.values():
             status_key = s.status.value.upper()
@@ -307,10 +313,29 @@ def create_app(
             priority_key = s.priority.name
             priority_counts[priority_key] = priority_counts.get(priority_key, 0) + 1
 
+            # Count corrections
+            if s.corrections:
+                correction_stats["specimens_with_corrections"] += 1
+                for field_name, corrections in s.corrections.items():
+                    if not corrections:
+                        continue
+                    # Handle both list and dict formats
+                    if isinstance(corrections, dict):
+                        corrections = [corrections]
+                    correction_stats["total_field_corrections"] += len(corrections)
+                    correction_stats["fields_corrected"][field_name] = (
+                        correction_stats["fields_corrected"].get(field_name, 0) + len(corrections)
+                    )
+                    for c in corrections:
+                        ctype = c.get("correction_type", "edit")
+                        if ctype in correction_stats["correction_types"]:
+                            correction_stats["correction_types"][ctype] += 1
+
         return {
             "total_specimens": len(specimens),
             "status_counts": status_counts,
             "priority_counts": priority_counts,
+            "correction_stats": correction_stats,
         }
 
     @app.get("/api/v1/images/{specimen_id}")
@@ -412,7 +437,7 @@ def create_app(
                 "notes": "Optional notes about what's wrong"
             }
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         specimen = specimens.get(specimen_id)
         if not specimen:
@@ -439,7 +464,7 @@ def create_app(
                     "text": region.get("text", ""),
                     "confidence": region.get("confidence", 0),
                     "zone": region.get("zone", {}),
-                    "requested_at": datetime.now(datetime.timezone.utc).isoformat(),
+                    "requested_at": datetime.now(timezone.utc).isoformat(),
                     "notes": notes,
                 })
 
@@ -515,6 +540,176 @@ def create_app(
 
         save_review_state()
         return {"status": "updated", "specimen_id": specimen_id}
+
+    @app.post("/api/v1/specimen/{specimen_id}/field/{field_name}")
+    async def update_field(specimen_id: str, field_name: str, request: Request):
+        """
+        Update a single DwC field value with correction tracking.
+
+        Tracks the original AI extraction, human correction, and links to
+        OCR regions for building a feedback dataset to improve future extraction.
+
+        Request body:
+            {
+                "value": "Corrected value",
+                "accept_suggestion": true/false
+            }
+        """
+        from datetime import datetime, timezone
+
+        specimen = specimens.get(specimen_id)
+        if not specimen:
+            raise HTTPException(status_code=404, detail="Specimen not found")
+
+        body = await request.json()
+        new_value = body.get("value", "")
+        accept_suggestion = body.get("accept_suggestion", False)
+
+        # Get original field data
+        field_data = specimen.dwc_fields.get(field_name, {})
+        original_value = field_data.get("value", "")
+        original_confidence = field_data.get("confidence", 0)
+
+        # Determine correction type
+        if accept_suggestion:
+            correction_type = "accept"
+        elif new_value == "":
+            correction_type = "clear"
+        elif new_value != original_value:
+            correction_type = "edit"
+        else:
+            correction_type = "no_change"
+
+        # Find matching OCR regions for this field value
+        specimen_ocr = ocr_regions.get(specimen_id, [])
+        matching_region_indices = []
+        if original_value:
+            search_val = original_value.lower().strip()
+            for i, region in enumerate(specimen_ocr):
+                region_text = region.get("text", "").lower().strip()
+                if (region_text == search_val or
+                    search_val in region_text or
+                    region_text in search_val):
+                    matching_region_indices.append(i)
+
+        # Build correction record
+        correction_record = {
+            "original_value": original_value,
+            "corrected_value": new_value,
+            "correction_type": correction_type,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "confidence_before": original_confidence,
+            "ocr_region_indices": matching_region_indices,
+        }
+
+        # Add zone hint if available from field data
+        if "zone_hint" in field_data:
+            correction_record["zone_hint"] = field_data["zone_hint"]
+
+        # Store correction (append to history, keeping last 5)
+        if field_name not in specimen.corrections:
+            specimen.corrections[field_name] = []
+
+        # Ensure corrections is a list (migrate from old dict format if needed)
+        if isinstance(specimen.corrections[field_name], dict):
+            specimen.corrections[field_name] = [specimen.corrections[field_name]]
+
+        specimen.corrections[field_name].append(correction_record)
+        # Keep only last 5 corrections per field
+        specimen.corrections[field_name] = specimen.corrections[field_name][-5:]
+
+        # Update the field value in dwc_fields
+        if field_name in specimen.dwc_fields:
+            specimen.dwc_fields[field_name]["corrected_value"] = new_value
+            specimen.dwc_fields[field_name]["human_reviewed"] = True
+        else:
+            specimen.dwc_fields[field_name] = {
+                "value": "",
+                "corrected_value": new_value,
+                "confidence": 0,
+                "human_reviewed": True,
+            }
+
+        save_review_state()
+
+        return {
+            "status": "field_updated",
+            "specimen_id": specimen_id,
+            "field": field_name,
+            "correction_type": correction_type,
+            "ocr_regions_linked": len(matching_region_indices),
+        }
+
+    @app.get("/api/v1/specimen/{specimen_id}/corrections")
+    async def get_corrections(specimen_id: str):
+        """
+        Get correction history for a specimen.
+
+        Returns all field corrections with their OCR region linkages,
+        useful for building feedback datasets.
+        """
+        specimen = specimens.get(specimen_id)
+        if not specimen:
+            raise HTTPException(status_code=404, detail="Specimen not found")
+
+        return {
+            "specimen_id": specimen_id,
+            "corrections": specimen.corrections,
+            "total_fields_corrected": len(specimen.corrections),
+        }
+
+    @app.get("/api/v1/feedback/export")
+    async def export_feedback_dataset():
+        """
+        Export all corrections as a feedback dataset for ML training.
+
+        Returns corrections linked to OCR regions across all specimens,
+        formatted for training data generation.
+        """
+        feedback_records = []
+
+        for specimen_id, specimen in specimens.items():
+            if not specimen.corrections:
+                continue
+
+            specimen_ocr = ocr_regions.get(specimen_id, [])
+
+            for field_name, corrections in specimen.corrections.items():
+                if not corrections:
+                    continue
+
+                # Handle both list and dict formats
+                if isinstance(corrections, dict):
+                    corrections = [corrections]
+
+                for correction in corrections:
+                    # Get linked OCR regions
+                    linked_regions = []
+                    for idx in correction.get("ocr_region_indices", []):
+                        if 0 <= idx < len(specimen_ocr):
+                            linked_regions.append({
+                                "index": idx,
+                                "text": specimen_ocr[idx].get("text", ""),
+                                "bounds": specimen_ocr[idx].get("bounds", {}),
+                                "zone": specimen_ocr[idx].get("zone", {}),
+                            })
+
+                    feedback_records.append({
+                        "specimen_id": specimen_id,
+                        "field_name": field_name,
+                        "original_value": correction.get("original_value", ""),
+                        "corrected_value": correction.get("corrected_value", ""),
+                        "correction_type": correction.get("correction_type", ""),
+                        "timestamp": correction.get("timestamp", ""),
+                        "confidence_before": correction.get("confidence_before", 0),
+                        "linked_ocr_regions": linked_regions,
+                    })
+
+        return {
+            "total_records": len(feedback_records),
+            "total_specimens_with_corrections": len([s for s in specimens.values() if s.corrections]),
+            "records": feedback_records,
+        }
 
     # Mount static files for the mobile UI
     mobile_dir = Path(__file__).parent

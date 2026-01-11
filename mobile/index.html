@@ -108,6 +108,10 @@
                         <span class="stat-label">Critical</span>
                         <span class="stat-value critical">{{ stats.priority_counts?.CRITICAL || 0 }}</span>
                     </div>
+                    <div class="stat" v-if="stats.correction_stats">
+                        <span class="stat-label">Corrections</span>
+                        <span class="stat-value">{{ stats.correction_stats?.total_field_corrections || 0 }}</span>
+                    </div>
                 </div>
             </header>
 
@@ -407,12 +411,19 @@
                         >
                             <div class="field-header">
                                 <label class="field-label">{{ formatFieldName(fieldName) }}</label>
-                                <span
-                                    class="confidence-badge"
-                                    :class="getConfidenceClass(fieldData.confidence)"
-                                >
-                                    {{ Math.round(fieldData.confidence * 100) }}%
-                                </span>
+                                <div class="field-badges">
+                                    <span
+                                        v-if="fieldData.human_reviewed"
+                                        class="reviewed-badge"
+                                        title="Human reviewed"
+                                    >✓</span>
+                                    <span
+                                        class="confidence-badge"
+                                        :class="getConfidenceClass(fieldData.confidence)"
+                                    >
+                                        {{ Math.round(fieldData.confidence * 100) }}%
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="field-input-group">
@@ -505,8 +516,8 @@
     </div>
 
     <!-- Scripts (versioned to bust cache) -->
-    <script src="/js/api.js?v=4"></script>
-    <script src="/js/app.js?v=4"></script>
+    <script src="/js/api.js?v=5"></script>
+    <script src="/js/app.js?v=5"></script>
 
     <!-- Service Worker Registration -->
     <script>
