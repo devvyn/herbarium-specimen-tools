@@ -26,12 +26,19 @@ createApp({
             highlightedRegionIndex: null,
             imageWidth: 1000,
             imageHeight: 1000,
+            imageLoaded: false,
             tooltipX: 0,
             tooltipY: 0,
 
             // Region Selection for Re-extraction
             regionSelectionMode: false,
             selectedRegionIndices: [],
+
+            // Contextual Action Menu
+            showRegionMenu: false,
+            selectedRegion: null,
+            regionMenuX: 0,
+            regionMenuY: 0,
 
             // Data
             queue: [],
@@ -121,6 +128,33 @@ createApp({
          */
         pendingReextractionCount() {
             return this.currentSpecimen?.review?.reextraction_regions?.length || 0;
+        },
+
+        /**
+         * Suggest fields that might use the selected region's text
+         * Based on the region's zone and low-confidence fields
+         */
+        suggestedFieldsForRegion() {
+            if (!this.selectedRegion || !this.currentSpecimen?.fields) return {};
+
+            const fields = this.currentSpecimen.fields;
+            const zone = this.selectedRegion.zone;
+            const text = this.selectedRegion.text.toLowerCase();
+
+            // Get low confidence fields (< 0.8) or empty fields
+            const suggestions = {};
+            for (const [name, field] of Object.entries(fields)) {
+                const confidence = field.confidence || 0;
+                const isEmpty = !field.value && !field.corrected_value;
+
+                // Suggest if low confidence, empty, or zone matches typical location
+                if (confidence < 0.8 || isEmpty) {
+                    suggestions[name] = field;
+                }
+            }
+
+            // Limit to 5 most relevant suggestions
+            return Object.fromEntries(Object.entries(suggestions).slice(0, 5));
         },
     },
 
@@ -213,6 +247,7 @@ createApp({
 
                 this.currentView = 'specimen';
                 this.imageZoomed = false;
+                this.imageLoaded = false;  // Reset for new image
 
                 // Reset OCR overlay state for new specimen
                 this.showOcrRegions = false;
@@ -365,28 +400,63 @@ createApp({
             const img = event.target;
             this.imageWidth = img.naturalWidth || img.width || 1000;
             this.imageHeight = img.naturalHeight || img.height || 1000;
+            this.imageLoaded = true;
         },
 
         showRegionTooltip(region, event) {
-            // Position tooltip near click point
+            // Position menu near click point
             const container = this.$refs.imageContainer;
             if (container) {
                 const rect = container.getBoundingClientRect();
-                this.tooltipX = event.clientX - rect.left;
-                this.tooltipY = event.clientY - rect.top;
+                this.regionMenuX = event.clientX - rect.left;
+                this.regionMenuY = event.clientY - rect.top;
             }
 
             // Find and highlight this region
             const index = this.currentSpecimen.ocr_regions.indexOf(region);
             this.highlightedRegionIndex = index;
+            this.selectedRegion = region;
+            this.showRegionMenu = true;
+        },
 
-            // Show toast with region text for easy copy
-            this.showToast(`OCR: "${region.text}"`, 'info');
+        closeRegionMenu() {
+            this.showRegionMenu = false;
+            this.selectedRegion = null;
+            this.highlightedRegionIndex = null;
+        },
 
-            // Clear highlight after animation
-            setTimeout(() => {
-                this.highlightedRegionIndex = null;
-            }, 2000);
+        async copyRegionText() {
+            if (!this.selectedRegion) return;
+            try {
+                await navigator.clipboard.writeText(this.selectedRegion.text);
+                this.showToast('Copied to clipboard', 'success');
+            } catch (e) {
+                // Fallback for older browsers
+                this.showToast(`OCR: "${this.selectedRegion.text}"`, 'info');
+            }
+            this.closeRegionMenu();
+        },
+
+        useRegionAsFieldValue(fieldName) {
+            if (!this.selectedRegion || !this.currentSpecimen?.fields?.[fieldName]) return;
+
+            const field = this.currentSpecimen.fields[fieldName];
+            field.corrected_value = this.selectedRegion.text;
+            field.reviewed = true;
+
+            this.showToast(`Set ${fieldName} to "${this.selectedRegion.text}"`, 'success');
+            this.closeRegionMenu();
+        },
+
+        markRegionForReextraction() {
+            if (!this.selectedRegion) return;
+
+            const index = this.currentSpecimen.ocr_regions.indexOf(this.selectedRegion);
+            if (index !== -1 && !this.selectedRegionIndices.includes(index)) {
+                this.selectedRegionIndices.push(index);
+                this.showToast('Region marked for re-extraction', 'info');
+            }
+            this.closeRegionMenu();
         },
 
         highlightMatchingRegions(fieldValue) {

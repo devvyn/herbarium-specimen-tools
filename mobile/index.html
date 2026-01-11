@@ -194,7 +194,7 @@
             <div v-else-if="currentView === 'specimen'" class="specimen-view">
                 <div v-if="currentSpecimen" class="specimen-detail">
                     <!-- Image Viewer -->
-                    <div class="image-container" ref="imageContainer">
+                    <div class="image-container" :class="{ loading: !imageLoaded, loaded: imageLoaded }" ref="imageContainer">
                         <img
                             :src="getImageUrl(currentSpecimen.id)"
                             :alt="currentSpecimen.id"
@@ -264,11 +264,13 @@
 
                         <!-- OCR Regions SVG Overlay -->
                         <svg
-                            v-if="showOcrRegions && hasOcrRegions"
+                            v-if="showOcrRegions && hasOcrRegions && imageLoaded"
                             class="ocr-overlay"
                             :class="{ 'selection-mode': regionSelectionMode }"
                             :viewBox="'0 0 ' + imageWidth + ' ' + imageHeight"
-                            preserveAspectRatio="none"
+                            preserveAspectRatio="xMinYMin meet"
+                            role="group"
+                            :aria-label="'OCR regions overlay with ' + currentSpecimen.ocr_regions.length + ' detected text regions. ' + (regionSelectionMode ? 'Selection mode active. Press Space or Enter to select regions.' : 'Press Tab to navigate between regions.')"
                         >
                             <rect
                                 v-for="(region, index) in currentSpecimen.ocr_regions"
@@ -286,15 +288,22 @@
                                         'pending-reextraction': isRegionPendingReextraction(index)
                                     }
                                 ]"
+                                role="button"
+                                tabindex="0"
+                                :aria-label="'OCR region: ' + region.text.substring(0, 50) + (region.text.length > 50 ? '...' : '') + ' (' + Math.round(region.confidence * 100) + '% confidence)'"
                                 @click.stop="regionSelectionMode ? toggleRegionSelection(index) : showRegionTooltip(region, $event)"
+                                @keydown.enter.stop="regionSelectionMode ? toggleRegionSelection(index) : showRegionTooltip(region, $event)"
+                                @keydown.space.prevent.stop="regionSelectionMode ? toggleRegionSelection(index) : showRegionTooltip(region, $event)"
                                 @mouseenter="hoverRegion = region"
                                 @mouseleave="hoverRegion = null"
+                                @focus="hoverRegion = region"
+                                @blur="hoverRegion = null"
                             />
                         </svg>
 
-                        <!-- OCR Region Tooltip -->
+                        <!-- OCR Region Tooltip (hover) -->
                         <div
-                            v-if="hoverRegion && showOcrRegions"
+                            v-if="hoverRegion && showOcrRegions && !showRegionMenu"
                             class="ocr-tooltip"
                             :style="tooltipStyle"
                         >
@@ -302,6 +311,49 @@
                             <div>Confidence: {{ Math.round(hoverRegion.confidence * 100) }}%</div>
                             <div v-if="hoverRegion.zone">Zone: {{ hoverRegion.zone.vertical }}-{{ hoverRegion.zone.horizontal }}</div>
                         </div>
+
+                        <!-- OCR Region Action Menu (click) -->
+                        <div
+                            v-if="showRegionMenu && selectedRegion"
+                            class="ocr-action-menu"
+                            :style="{ left: regionMenuX + 'px', top: regionMenuY + 'px' }"
+                            @click.stop
+                        >
+                            <div class="ocr-menu-header">
+                                <span class="ocr-menu-text">{{ selectedRegion.text.substring(0, 40) }}{{ selectedRegion.text.length > 40 ? '...' : '' }}</span>
+                                <button class="ocr-menu-close" @click="closeRegionMenu" aria-label="Close menu">&times;</button>
+                            </div>
+                            <div class="ocr-menu-confidence">
+                                {{ Math.round(selectedRegion.confidence * 100) }}% confidence
+                            </div>
+                            <div class="ocr-menu-actions">
+                                <button @click="copyRegionText" class="ocr-menu-btn">
+                                    📋 Copy text
+                                </button>
+                                <button @click="markRegionForReextraction" class="ocr-menu-btn">
+                                    🔄 Mark for re-extraction
+                                </button>
+                                <div class="ocr-menu-divider"></div>
+                                <div class="ocr-menu-label">Use as field value:</div>
+                                <div class="ocr-menu-fields">
+                                    <button
+                                        v-for="(field, fieldName) in suggestedFieldsForRegion"
+                                        :key="fieldName"
+                                        @click="useRegionAsFieldValue(fieldName)"
+                                        class="ocr-menu-field-btn"
+                                    >
+                                        {{ fieldName }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Click outside to close menu -->
+                        <div
+                            v-if="showRegionMenu"
+                            class="ocr-menu-backdrop"
+                            @click="closeRegionMenu"
+                        ></div>
 
                         <div class="image-hint">Tap to zoom</div>
                     </div>

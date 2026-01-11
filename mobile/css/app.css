@@ -377,10 +377,31 @@ body {
     width: 100%;
     background: #000;
     cursor: pointer;
+    overflow: hidden; /* Contain zoomed image */
+}
+
+/* Loading state - use aspect-ratio to prevent collapse */
+.image-container.loading {
+    aspect-ratio: 3 / 4; /* Typical herbarium sheet ratio */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-container.loading::after {
+    content: "Loading image...";
+    color: rgba(255, 255, 255, 0.7);
+    font-size: var(--font-size-sm);
+}
+
+/* When image is loaded, container height is determined by image */
+.image-container.loaded {
+    aspect-ratio: auto;
 }
 
 .specimen-image {
     width: 100%;
+    height: auto;
     display: block;
     transition: transform 0.3s ease;
 }
@@ -402,7 +423,7 @@ body {
     pointer-events: none;
 }
 
-/* OCR Regions Overlay */
+/* OCR Regions Overlay - must match image dimensions exactly */
 .ocr-overlay {
     position: absolute;
     top: 0;
@@ -411,6 +432,8 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 10;
+    /* Ensure SVG fills container and matches image layout */
+    display: block;
 }
 
 .ocr-region {
@@ -418,12 +441,21 @@ body {
     stroke-width: 2;
     cursor: pointer;
     pointer-events: all;
-    transition: fill 0.2s, stroke-width 0.2s;
+    transition: fill 0.2s, stroke-width 0.2s, stroke 0.2s;
+    outline: none; /* We use stroke for focus indication */
 }
 
-.ocr-region:hover {
+.ocr-region:hover,
+.ocr-region:focus {
     stroke-width: 3;
     fill: rgba(59, 130, 246, 0.15);
+}
+
+/* Focus-visible for keyboard navigation (WCAG 2.4.7) */
+.ocr-region:focus-visible {
+    stroke-width: 4;
+    fill: rgba(59, 130, 246, 0.25);
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.8));
 }
 
 .ocr-region.highlighted {
@@ -437,17 +469,37 @@ body {
     50% { fill: rgba(59, 130, 246, 0.4); }
 }
 
-/* Confidence-based colors */
+/* Confidence-based colors with enhanced visibility */
 .ocr-region.confidence-high {
     stroke: var(--color-success);
+    /* Add subtle fill for better visibility against varied backgrounds */
+    fill: rgba(16, 185, 129, 0.05);
 }
 
 .ocr-region.confidence-medium {
     stroke: var(--color-warning);
+    fill: rgba(245, 158, 11, 0.05);
 }
 
 .ocr-region.confidence-low {
     stroke: var(--color-danger);
+    fill: rgba(239, 68, 68, 0.08);
+}
+
+/* Enhanced hover states per confidence */
+.ocr-region.confidence-high:hover,
+.ocr-region.confidence-high:focus {
+    fill: rgba(16, 185, 129, 0.2);
+}
+
+.ocr-region.confidence-medium:hover,
+.ocr-region.confidence-medium:focus {
+    fill: rgba(245, 158, 11, 0.2);
+}
+
+.ocr-region.confidence-low:hover,
+.ocr-region.confidence-low:focus {
+    fill: rgba(239, 68, 68, 0.2);
 }
 
 /* OCR region tooltip */
@@ -464,6 +516,126 @@ body {
     pointer-events: none;
     transform: translate(-50%, -100%);
     margin-top: -8px;
+}
+
+/* OCR region action menu */
+.ocr-action-menu {
+    position: absolute;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 25;
+    min-width: 220px;
+    max-width: 280px;
+    transform: translate(-50%, -100%);
+    margin-top: -8px;
+}
+
+.ocr-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.ocr-menu-text {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    word-break: break-word;
+    flex: 1;
+    padding-right: var(--spacing-sm);
+}
+
+.ocr-menu-close {
+    background: none;
+    border: none;
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.ocr-menu-close:hover {
+    color: var(--color-text);
+}
+
+.ocr-menu-confidence {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ocr-menu-actions {
+    padding: var(--spacing-sm);
+}
+
+.ocr-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.ocr-menu-btn:hover {
+    background: var(--color-bg-secondary);
+}
+
+.ocr-menu-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--spacing-sm) 0;
+}
+
+.ocr-menu-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    padding: 0 var(--spacing-md) var(--spacing-xs);
+}
+
+.ocr-menu-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: 0 var(--spacing-sm) var(--spacing-sm);
+}
+
+.ocr-menu-field-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ocr-menu-field-btn:hover {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+/* Backdrop to catch clicks outside menu */
+.ocr-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 24;
 }
 
 /* OCR toggle button */

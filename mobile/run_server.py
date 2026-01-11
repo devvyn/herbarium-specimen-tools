@@ -178,7 +178,10 @@ def create_app(
     # Load specimen data
     global ocr_regions
     try:
-        specimen_list = load_specimens_for_review(data_path)
+        # Resolve actual data path (auto-discover if not provided)
+        actual_data_path = data_path or find_latest_extraction()
+
+        specimen_list = load_specimens_for_review(actual_data_path)
         specimens = {s.specimen_id: s for s in specimen_list}
         logger.info(f"Loaded {len(specimens)} specimens")
 
@@ -188,8 +191,9 @@ def create_app(
             apply_review_state(specimens, review_state)
 
         # Load OCR regions from enriched JSONL (if available)
-        enriched_path = data_path.parent / "enriched.jsonl"
-        ocr_regions = load_ocr_regions(enriched_path)
+        if actual_data_path:
+            enriched_path = actual_data_path.parent / "enriched.jsonl"
+            ocr_regions = load_ocr_regions(enriched_path)
     except FileNotFoundError as e:
         logger.error(f"Failed to load specimens: {e}")
         specimens = {}
