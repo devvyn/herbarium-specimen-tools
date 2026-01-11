@@ -94,7 +94,8 @@ def save_review_state():
         # Only save specimens with review activity
         if (specimen.notes or specimen.review_notes or
             specimen.status != ReviewStatus.PENDING or
-            specimen.flagged or specimen.reextraction_requested):
+            specimen.flagged or specimen.reextraction_requested or
+            specimen.reextraction_regions):
             state[sid] = {
                 "notes": specimen.notes,
                 "review_notes": specimen.review_notes,
@@ -102,6 +103,7 @@ def save_review_state():
                 "priority": specimen.priority.name,
                 "flagged": specimen.flagged,
                 "reextraction_requested": specimen.reextraction_requested,
+                "reextraction_regions": specimen.reextraction_regions,
                 "corrections": specimen.corrections,
             }
 
@@ -127,6 +129,7 @@ def apply_review_state(specimens: Dict[str, SpecimenReview], state: Dict):
                 specimen.priority = ReviewPriority[data["priority"]]
             specimen.flagged = data.get("flagged", False)
             specimen.reextraction_requested = data.get("reextraction_requested", False)
+            specimen.reextraction_regions = data.get("reextraction_regions", [])
             specimen.corrections = data.get("corrections", {})
     logger.info(f"Applied review state for {len(state)} specimens")
 
@@ -394,6 +397,95 @@ def create_app(
         save_review_state()
         return {"status": "reextraction_requested", "specimen_id": specimen_id}
 
+    @app.post("/api/v1/specimen/{specimen_id}/request-region-reextraction")
+    async def request_region_reextraction(specimen_id: str, request: Request):
+        """
+        Request re-extraction for specific OCR regions.
+
+        Accepts a list of region indices to re-extract, with optional notes.
+        This enables targeted re-extraction of problem areas rather than
+        re-processing the entire specimen.
+
+        Request body:
+            {
+                "region_indices": [0, 3, 5],
+                "notes": "Optional notes about what's wrong"
+            }
+        """
+        from datetime import datetime
+
+        specimen = specimens.get(specimen_id)
+        if not specimen:
+            raise HTTPException(status_code=404, detail="Specimen not found")
+
+        body = await request.json()
+        region_indices = body.get("region_indices", [])
+        notes = body.get("notes", "")
+
+        if not region_indices:
+            raise HTTPException(status_code=400, detail="No regions specified")
+
+        # Get OCR regions for this specimen
+        specimen_ocr = ocr_regions.get(specimen_id, [])
+
+        # Build region re-extraction records
+        new_regions = []
+        for idx in region_indices:
+            if 0 <= idx < len(specimen_ocr):
+                region = specimen_ocr[idx]
+                new_regions.append({
+                    "region_index": idx,
+                    "bounds": region.get("bounds", {}),
+                    "text": region.get("text", ""),
+                    "confidence": region.get("confidence", 0),
+                    "zone": region.get("zone", {}),
+                    "requested_at": datetime.now(datetime.timezone.utc).isoformat(),
+                    "notes": notes,
+                })
+
+        if not new_regions:
+            raise HTTPException(status_code=400, detail="No valid region indices")
+
+        # Append to existing reextraction_regions (don't replace)
+        if not hasattr(specimen, "reextraction_regions") or specimen.reextraction_regions is None:
+            specimen.reextraction_regions = []
+        specimen.reextraction_regions.extend(new_regions)
+
+        # Also set the general reextraction flag
+        specimen.reextraction_requested = True
+        specimen.status = ReviewStatus.PENDING
+
+        save_review_state()
+
+        return {
+            "status": "region_reextraction_requested",
+            "specimen_id": specimen_id,
+            "regions_queued": len(new_regions),
+            "total_pending_regions": len(specimen.reextraction_regions),
+        }
+
+    @app.delete("/api/v1/specimen/{specimen_id}/reextraction-regions")
+    async def clear_reextraction_regions(specimen_id: str):
+        """Clear all pending region re-extraction requests for a specimen."""
+        specimen = specimens.get(specimen_id)
+        if not specimen:
+            raise HTTPException(status_code=404, detail="Specimen not found")
+
+        cleared_count = len(specimen.reextraction_regions) if hasattr(specimen, "reextraction_regions") else 0
+        specimen.reextraction_regions = []
+
+        # If no general re-extraction was requested, clear that flag too
+        if not specimen.review_notes:  # Only if no notes suggesting manual re-extraction
+            specimen.reextraction_requested = False
+
+        save_review_state()
+
+        return {
+            "status": "cleared",
+            "specimen_id": specimen_id,
+            "regions_cleared": cleared_count,
+        }
+
     @app.put("/api/v1/specimen/{specimen_id}")
     async def update_specimen(specimen_id: str, request: Request):
         """
@@ -490,6 +582,7 @@ def specimen_to_detail_dict(s: SpecimenReview) -> dict:
             "review_notes": s.review_notes or "",
             "flagged": s.flagged,
             "reextraction_requested": s.reextraction_requested,
+            "reextraction_regions": s.reextraction_regions if hasattr(s, "reextraction_regions") else [],
         },
         "gbif_validation": {
             "taxonomy_verified": s.gbif_taxonomy_verified,

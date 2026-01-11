@@ -201,23 +201,68 @@
                             ref="specimenImage"
                         >
 
-                        <!-- OCR Toggle Button -->
-                        <button
-                            v-if="hasOcrRegions"
-                            @click.stop="toggleOcrOverlay"
-                            class="ocr-toggle"
-                            :class="{ active: showOcrRegions }"
-                            :aria-pressed="showOcrRegions"
-                            aria-label="Toggle OCR region overlay"
-                        >
-                            <span class="ocr-toggle-icon">{{ showOcrRegions ? '👁' : '👁‍🗨' }}</span>
-                            <span>{{ showOcrRegions ? 'Hide' : 'Show' }} OCR</span>
-                        </button>
+                        <!-- OCR Controls -->
+                        <div v-if="hasOcrRegions" class="ocr-controls">
+                            <!-- Toggle OCR Button -->
+                            <button
+                                @click.stop="toggleOcrOverlay"
+                                class="ocr-toggle"
+                                :class="{ active: showOcrRegions }"
+                                :aria-pressed="showOcrRegions"
+                                aria-label="Toggle OCR region overlay"
+                            >
+                                <span class="ocr-toggle-icon">{{ showOcrRegions ? '👁' : '👁‍🗨' }}</span>
+                                <span>{{ showOcrRegions ? 'Hide' : 'Show' }} OCR</span>
+                            </button>
+
+                            <!-- Select Regions Button -->
+                            <button
+                                v-if="showOcrRegions && !regionSelectionMode"
+                                @click.stop="toggleRegionSelectionMode"
+                                class="ocr-toggle"
+                                aria-label="Select regions for re-extraction"
+                            >
+                                <span class="ocr-toggle-icon">✓</span>
+                                <span>Select</span>
+                            </button>
+
+                            <!-- Selection Mode Controls -->
+                            <template v-if="regionSelectionMode">
+                                <button
+                                    @click.stop="submitRegionReextraction"
+                                    class="ocr-toggle active"
+                                    :disabled="!hasSelectedRegions || actionLoading"
+                                    aria-label="Submit selected regions for re-extraction"
+                                >
+                                    <span class="ocr-toggle-icon">🔄</span>
+                                    <span>Re-extract ({{ selectedRegionIndices.length }})</span>
+                                </button>
+                                <button
+                                    @click.stop="toggleRegionSelectionMode"
+                                    class="ocr-toggle"
+                                    aria-label="Cancel region selection"
+                                >
+                                    <span class="ocr-toggle-icon">✕</span>
+                                    <span>Cancel</span>
+                                </button>
+                            </template>
+
+                            <!-- Pending Re-extraction Badge -->
+                            <span
+                                v-if="hasPendingReextractionRegions && !regionSelectionMode"
+                                class="pending-badge"
+                                @click.stop="clearPendingReextractions"
+                                title="Click to clear pending re-extractions"
+                            >
+                                🔄 {{ pendingReextractionCount }} pending
+                            </span>
+                        </div>
 
                         <!-- OCR Regions SVG Overlay -->
                         <svg
                             v-if="showOcrRegions && hasOcrRegions"
                             class="ocr-overlay"
+                            :class="{ 'selection-mode': regionSelectionMode }"
                             :viewBox="'0 0 ' + imageWidth + ' ' + imageHeight"
                             preserveAspectRatio="none"
                         >
@@ -231,9 +276,13 @@
                                 class="ocr-region"
                                 :class="[
                                     'confidence-' + getConfidenceClass(region.confidence),
-                                    { highlighted: highlightedRegionIndex === index }
+                                    {
+                                        highlighted: highlightedRegionIndex === index,
+                                        selected: isRegionSelected(index),
+                                        'pending-reextraction': isRegionPendingReextraction(index)
+                                    }
                                 ]"
-                                @click.stop="showRegionTooltip(region, $event)"
+                                @click.stop="regionSelectionMode ? toggleRegionSelection(index) : showRegionTooltip(region, $event)"
                                 @mouseenter="hoverRegion = region"
                                 @mouseleave="hoverRegion = null"
                             />
@@ -456,8 +505,8 @@
     </div>
 
     <!-- Scripts (versioned to bust cache) -->
-    <script src="/js/api.js?v=3"></script>
-    <script src="/js/app.js?v=3"></script>
+    <script src="/js/api.js?v=4"></script>
+    <script src="/js/app.js?v=4"></script>
 
     <!-- Service Worker Registration -->
     <script>

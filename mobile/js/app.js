@@ -29,6 +29,10 @@ createApp({
             tooltipX: 0,
             tooltipY: 0,
 
+            // Region Selection for Re-extraction
+            regionSelectionMode: false,
+            selectedRegionIndices: [],
+
             // Data
             queue: [],
             currentSpecimen: null,
@@ -96,6 +100,27 @@ createApp({
                 left: this.tooltipX + 'px',
                 top: this.tooltipY + 'px',
             };
+        },
+
+        /**
+         * Check if any regions are selected for re-extraction
+         */
+        hasSelectedRegions() {
+            return this.selectedRegionIndices.length > 0;
+        },
+
+        /**
+         * Check if specimen has pending region re-extraction requests
+         */
+        hasPendingReextractionRegions() {
+            return this.currentSpecimen?.review?.reextraction_regions?.length > 0;
+        },
+
+        /**
+         * Get count of pending re-extraction regions
+         */
+        pendingReextractionCount() {
+            return this.currentSpecimen?.review?.reextraction_regions?.length || 0;
         },
     },
 
@@ -193,6 +218,8 @@ createApp({
                 this.showOcrRegions = false;
                 this.highlightedRegionIndex = null;
                 this.hoverRegion = null;
+                this.regionSelectionMode = false;
+                this.selectedRegionIndices = [];
             } catch (error) {
                 this.showToast(`Error loading specimen: ${error.message}`, 'error');
             } finally {
@@ -398,6 +425,102 @@ createApp({
                 }, 2500);
             } else {
                 this.showToast('No matching OCR region found', 'warning');
+            }
+        },
+
+        /**
+         * Region Selection for Re-extraction
+         */
+        toggleRegionSelectionMode() {
+            this.regionSelectionMode = !this.regionSelectionMode;
+            if (!this.regionSelectionMode) {
+                // Clear selection when exiting selection mode
+                this.selectedRegionIndices = [];
+            } else {
+                // Ensure OCR overlay is visible in selection mode
+                this.showOcrRegions = true;
+            }
+        },
+
+        toggleRegionSelection(index) {
+            if (!this.regionSelectionMode) return;
+
+            const idx = this.selectedRegionIndices.indexOf(index);
+            if (idx === -1) {
+                // Add to selection
+                this.selectedRegionIndices.push(index);
+            } else {
+                // Remove from selection
+                this.selectedRegionIndices.splice(idx, 1);
+            }
+        },
+
+        isRegionSelected(index) {
+            return this.selectedRegionIndices.includes(index);
+        },
+
+        isRegionPendingReextraction(index) {
+            const pending = this.currentSpecimen?.review?.reextraction_regions || [];
+            return pending.some(r => r.region_index === index);
+        },
+
+        async submitRegionReextraction() {
+            if (!this.hasSelectedRegions || this.actionLoading) return;
+
+            const notes = prompt('Optional notes about what needs re-extraction:');
+
+            try {
+                this.actionLoading = true;
+                const result = await herbariumAPI.requestRegionReextraction(
+                    this.currentSpecimen.id,
+                    this.selectedRegionIndices,
+                    notes
+                );
+
+                this.showToast(
+                    `${result.regions_queued} region(s) queued for re-extraction`,
+                    'success'
+                );
+
+                // Update local state
+                if (!this.currentSpecimen.review.reextraction_regions) {
+                    this.currentSpecimen.review.reextraction_regions = [];
+                }
+
+                // Refresh specimen to get updated state
+                const data = await herbariumAPI.getSpecimen(this.currentSpecimen.id);
+                this.currentSpecimen = data.specimen;
+
+                // Exit selection mode
+                this.regionSelectionMode = false;
+                this.selectedRegionIndices = [];
+
+            } catch (error) {
+                this.showToast(`Error: ${error.message}`, 'error');
+            } finally {
+                this.actionLoading = false;
+            }
+        },
+
+        async clearPendingReextractions() {
+            if (!this.hasPendingReextractionRegions || this.actionLoading) return;
+
+            if (!confirm('Clear all pending region re-extraction requests?')) return;
+
+            try {
+                this.actionLoading = true;
+                await herbariumAPI.clearReextractionRegions(this.currentSpecimen.id);
+
+                this.showToast('Pending re-extractions cleared', 'info');
+
+                // Refresh specimen
+                const data = await herbariumAPI.getSpecimen(this.currentSpecimen.id);
+                this.currentSpecimen = data.specimen;
+
+            } catch (error) {
+                this.showToast(`Error: ${error.message}`, 'error');
+            } finally {
+                this.actionLoading = false;
             }
         },
 

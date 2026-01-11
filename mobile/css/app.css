@@ -508,6 +508,58 @@ body {
     border-color: var(--color-primary);
 }
 
+/* OCR Controls Container */
+.ocr-controls {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    z-index: 15;
+}
+
+/* Selection mode styling */
+.ocr-overlay.selection-mode .ocr-region {
+    cursor: pointer;
+}
+
+/* Selected region styling */
+.ocr-region.selected {
+    stroke: var(--color-primary) !important;
+    stroke-width: 4;
+    fill: rgba(16, 185, 129, 0.3);
+    stroke-dasharray: none;
+}
+
+/* Pending re-extraction styling */
+.ocr-region.pending-reextraction {
+    stroke: var(--color-warning) !important;
+    stroke-width: 3;
+    stroke-dasharray: 8 4;
+    fill: rgba(245, 158, 11, 0.2);
+}
+
+/* Pending badge */
+.pending-badge {
+    background: var(--color-warning);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pending-badge:hover {
+    background: #d97706;
+}
+
+/* Selection mode hint in tooltip */
+.ocr-tooltip.selection-hint {
+    background: var(--color-primary);
+}
+
 /* Quick Actions */
 .quick-actions {
     display: flex;

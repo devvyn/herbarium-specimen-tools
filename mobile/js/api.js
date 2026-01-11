@@ -188,6 +188,28 @@ class HerbariumAPI {
     }
 
     /**
+     * Request re-extraction for specific OCR regions
+     */
+    async requestRegionReextraction(specimenId, regionIndices, notes = null) {
+        return this.request(`/specimen/${specimenId}/request-region-reextraction`, {
+            method: 'POST',
+            body: JSON.stringify({
+                region_indices: regionIndices,
+                notes: notes || '',
+            }),
+        });
+    }
+
+    /**
+     * Clear all pending region re-extraction requests
+     */
+    async clearReextractionRegions(specimenId) {
+        return this.request(`/specimen/${specimenId}/reextraction-regions`, {
+            method: 'DELETE',
+        });
+    }
+
+    /**
      * Statistics
      */
     async getStatistics() {

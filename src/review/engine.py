@@ -87,6 +87,7 @@ class SpecimenReview:
     status: ReviewStatus = ReviewStatus.PENDING
     flagged: bool = False  # Independent attention marker
     reextraction_requested: bool = False  # Request re-extraction with different params
+    reextraction_regions: List[Dict] = dataclass_field(default_factory=list)  # Specific regions to re-extract
     reviewed_by: Optional[str] = None
     reviewed_at: Optional[str] = None
     corrections: Dict = dataclass_field(default_factory=dict)
