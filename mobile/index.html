@@ -267,7 +267,7 @@
                             v-if="showOcrRegions && hasOcrRegions && imageLoaded"
                             class="ocr-overlay"
                             :class="{ 'selection-mode': regionSelectionMode }"
-                            :viewBox="'0 0 ' + imageWidth + ' ' + imageHeight"
+                            ref="ocrOverlay"
                             preserveAspectRatio="xMinYMin meet"
                             role="group"
                             :aria-label="'OCR regions overlay with ' + currentSpecimen.ocr_regions.length + ' detected text regions. ' + (regionSelectionMode ? 'Selection mode active. Press Space or Enter to select regions.' : 'Press Tab to navigate between regions.')"

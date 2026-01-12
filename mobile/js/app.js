@@ -393,6 +393,13 @@ createApp({
             this.showOcrRegions = !this.showOcrRegions;
             this.highlightedRegionIndex = null;
             this.hoverRegion = null;
+
+            // Set viewBox after SVG renders
+            if (this.showOcrRegions) {
+                this.$nextTick(() => {
+                    this.updateSvgViewBox();
+                });
+            }
         },
 
         onImageLoad(event) {
@@ -401,6 +408,21 @@ createApp({
             this.imageWidth = img.naturalWidth || img.width || 1000;
             this.imageHeight = img.naturalHeight || img.height || 1000;
             this.imageLoaded = true;
+
+            // Set viewBox on next tick after SVG renders
+            // (Vue lowercases :viewBox to viewbox, breaking SVG coordinate transform)
+            this.$nextTick(() => {
+                this.updateSvgViewBox();
+            });
+        },
+
+        updateSvgViewBox() {
+            // Manually set viewBox with correct camelCase
+            // Required because Vue's template compiler lowercases SVG attributes
+            const svg = this.$refs.ocrOverlay;
+            if (svg) {
+                svg.setAttribute('viewBox', `0 0 ${this.imageWidth} ${this.imageHeight}`);
+            }
         },
 
         showRegionTooltip(region, event) {
