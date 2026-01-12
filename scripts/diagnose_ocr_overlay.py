@@ -486,6 +486,34 @@ class DiagnosticRunner:
 
                 await self.checkpoint("Selection Mode")
 
+        # === EXTRACT CLIENT TELEMETRY ===
+        print("\nExtracting client-side telemetry...")
+
+        client_telemetry = await self.page.evaluate("""() => {
+            if (window.herbariumTracker) {
+                return {
+                    errors: window.herbariumTracker.exportErrors(),
+                    telemetry: window.herbariumTracker.exportTelemetry(),
+                    stats: window.herbariumTracker.stats(),
+                    context: window.herbariumTracker.getContext()
+                };
+            }
+            return null;
+        }""")
+
+        if client_telemetry:
+            self.session.errors.extend([
+                TelemetryEvent(
+                    timestamp=e.get('timestamp', ''),
+                    event_type=f"client.{e.get('type', 'error')}",
+                    data=e
+                ) for e in client_telemetry.get('errors', [])
+            ])
+            print(f"  Client errors: {client_telemetry['stats'].get('errorCount', 0)}")
+            print(f"  Client telemetry events: {client_telemetry['stats'].get('telemetryCount', 0)}")
+        else:
+            print("  Client telemetry not available (herbariumTracker not loaded)")
+
         # === FINAL STATE ===
         await self.checkpoint("Final State", notes=["End of diagnostic run"])
 
