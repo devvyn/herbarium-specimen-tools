@@ -29,12 +29,12 @@ class ReviewStatus(Enum):
     PENDING = "pending"
     IN_REVIEW = "in_review"
     NEEDS_CORRECTION = "needs_correction"
-    DRAFT_CORRECTED = "draft_corrected"        # Curator corrected, ready for entrant
-    ENTRANT_REVIEW = "entrant_review"          # Assigned to data entrant
-    ENTRANT_APPROVED = "entrant_approved"      # Entrant approved corrections
-    READY_FOR_EXPORT = "ready_for_export"      # Final pre-export state
-    EXPORTED = "exported"                      # Successfully exported
-    APPROVED = "approved"                      # Legacy/generic approval
+    DRAFT_CORRECTED = "draft_corrected"  # Curator corrected, ready for entrant
+    ENTRANT_REVIEW = "entrant_review"  # Assigned to data entrant
+    ENTRANT_APPROVED = "entrant_approved"  # Entrant approved corrections
+    READY_FOR_EXPORT = "ready_for_export"  # Final pre-export state
+    EXPORTED = "exported"  # Successfully exported
+    APPROVED = "approved"  # Legacy/generic approval
     REJECTED = "rejected"
 
 
@@ -86,7 +86,9 @@ class SpecimenReview:
     status: ReviewStatus = ReviewStatus.PENDING
     flagged: bool = False  # Independent attention marker
     reextraction_requested: bool = False  # Request re-extraction with different params
-    reextraction_regions: list[dict] = dataclass_field(default_factory=list)  # Specific regions to re-extract
+    reextraction_regions: list[dict] = dataclass_field(
+        default_factory=list
+    )  # Specific regions to re-extract
     reviewed_by: str | None = None
     reviewed_at: str | None = None
     corrections: dict = dataclass_field(default_factory=dict)
@@ -113,9 +115,15 @@ class SpecimenReview:
     export_history: list[dict] = dataclass_field(default_factory=list)
 
     def calculate_quality_score(self):
-        """Calculate overall quality score from components."""
-        # Weighted combination of completeness and confidence
-        self.quality_score = (self.completeness_score * 0.6) + (self.confidence_score * 0.4)
+        """Calculate overall quality score from components.
+
+        Quality score is 0-100:
+        - 60% weighted completeness (0-100 scale)
+        - 40% weighted confidence (0-1 scale, converted to 0-100)
+        """
+        # Convert confidence from 0-1 to 0-100 for consistent weighting
+        confidence_pct = self.confidence_score * 100
+        self.quality_score = (self.completeness_score * 0.6) + (confidence_pct * 0.4)
 
     def determine_priority(self):
         """Determine review priority based on quality and issues."""
@@ -153,9 +161,7 @@ class SpecimenReview:
             "corrected_by": corrected_by,
             "corrected_at": datetime.utcnow().isoformat() + "Z",
             "original_value": self.dwc_fields.get(field),
-            "was_ai_extracted": (
-                field in self.raw_extraction if self.raw_extraction else False
-            ),
+            "was_ai_extracted": (field in self.raw_extraction if self.raw_extraction else False),
             "reason": reason,
         }
 
@@ -610,13 +616,11 @@ class ReviewEngine:
                         field=field,
                         new_value=value["value"],
                         corrected_by=reviewed_by or "unknown",
-                        reason=value.get("reason")
+                        reason=value.get("reason"),
                     )
                 else:
                     review.apply_correction(
-                        field=field,
-                        new_value=value,
-                        corrected_by=reviewed_by or "unknown"
+                        field=field, new_value=value, corrected_by=reviewed_by or "unknown"
                     )
 
         if status:
@@ -702,7 +706,9 @@ class ReviewEngine:
             return
 
         review.supervisor_approve(supervisor_username)
-        logger.info(f"Specimen {specimen_id} approved by supervisor {supervisor_username}, ready for export")
+        logger.info(
+            f"Specimen {specimen_id} approved by supervisor {supervisor_username}, ready for export"
+        )
 
     def submit_for_entrant_review(self, specimen_id: str, curator_username: str):
         """
@@ -723,14 +729,14 @@ class ReviewEngine:
     def get_assigned_specimens(self, entrant_username: str) -> list[SpecimenReview]:
         """Get all specimens assigned to a specific entrant."""
         return [
-            review for review in self.reviews.values()
-            if review.assigned_to == entrant_username
+            review for review in self.reviews.values() if review.assigned_to == entrant_username
         ]
 
     def get_ready_for_export(self) -> list[SpecimenReview]:
         """Get all specimens ready for export."""
         return [
-            review for review in self.reviews.values()
+            review
+            for review in self.reviews.values()
             if review.status == ReviewStatus.READY_FOR_EXPORT
         ]
 

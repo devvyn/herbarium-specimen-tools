@@ -19,8 +19,8 @@ import pytest
 
 from src.review.engine import (
     ReviewEngine,
-    ReviewStatus,
     ReviewPriority,
+    ReviewStatus,
     SpecimenReview,
 )
 
@@ -102,11 +102,14 @@ class TestSpecimenReview:
     """Tests for SpecimenReview dataclass."""
 
     def test_calculate_quality_score(self):
-        """Test quality score calculation (60% completeness + 40% confidence)."""
+        """Test quality score calculation (60% completeness + 40% confidence).
+
+        Note: confidence_score is stored as 0-1, converted to 0-100 in calculation.
+        """
         review = SpecimenReview(
             specimen_id="TEST-001",
             completeness_score=80.0,
-            confidence_score=90.0,
+            confidence_score=0.90,  # 0-1 scale
         )
 
         review.calculate_quality_score()
@@ -380,7 +383,9 @@ class TestReviewEngine:
         )
 
         review = engine.get_review("TEST-001")
-        assert review.corrections == corrections
+        # Corrections are stored with full metadata, check the value
+        assert "scientificName" in review.corrections
+        assert review.corrections["scientificName"]["value"] == "Corrected name"
         assert review.status == ReviewStatus.APPROVED
         assert review.flagged is True
         assert review.reviewed_by == "test_user"
@@ -482,4 +487,5 @@ class TestQualityScoring:
         assert review.confidence_score < 0.5
         assert review.quality_score < 50.0
         assert len(review.critical_issues) > 0
-        assert review.priority == ReviewPriority.HIGH
+        # CRITICAL priority because of missing required fields (critical issues)
+        assert review.priority == ReviewPriority.CRITICAL

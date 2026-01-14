@@ -1059,11 +1059,11 @@ dependencies = [
     { name = "aiohttp" },
     { name = "anthropic" },
     { name = "azure-ai-vision-imageanalysis" },
+    { name = "bcrypt" },
     { name = "fastapi" },
     { name = "google-cloud-vision" },
     { name = "httpx" },
     { name = "openai" },
-    { name = "passlib", extra = ["bcrypt"] },
     { name = "pillow" },
     { name = "playwright" },
     { name = "pygbif" },
@@ -1112,6 +1112,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "anthropic", specifier = ">=0.25.0" },
     { name = "azure-ai-vision-imageanalysis", specifier = ">=1.0.0" },
+    { name = "bcrypt", specifier = ">=4.0.0" },
     { name = "boto3", marker = "extra == 'lambda'", specifier = ">=1.40.39" },
     { name = "duckdb", marker = "extra == 'analytics'", specifier = ">=0.9.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
@@ -1122,7 +1123,6 @@ requires-dist = [
     { name = "mangum", marker = "extra == 'lambda'", specifier = ">=0.17.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "openai", specifier = ">=1.12.0" },
-    { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pillow", specifier = ">=10.0.0" },
     { name = "playwright", specifier = ">=1.56.0" },
     { name = "playwright", marker = "extra == 'dev'", specifier = ">=1.40.0" },
@@ -1825,20 +1825,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f", size = 165727, upload-time = "2025-04-19T11:48:59.673Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484", size = 66469, upload-time = "2025-04-19T11:48:57.875Z" },
-]
-
-[[package]]
-name = "passlib"
-version = "1.7.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b6/06/9da9ee59a67fae7761aab3ccc84fa4f3f33f125b370f1ccdb915bf967c11/passlib-1.7.4.tar.gz", hash = "sha256:defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04", size = 689844, upload-time = "2020-10-08T19:00:52.121Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/a4/ab6b7589382ca3df236e03faa71deac88cae040af60c071a78d254a62172/passlib-1.7.4-py2.py3-none-any.whl", hash = "sha256:aa6bca462b8d8bda89c70b382f0c298a20b5560af6cbfa2dce410c0a2fb669f1", size = 525554, upload-time = "2020-10-08T19:00:49.856Z" },
-]
-
-[package.optional-dependencies]
-bcrypt = [
-    { name = "bcrypt" },
 ]
 
 [[package]]

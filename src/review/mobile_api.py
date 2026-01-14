@@ -19,13 +19,13 @@ import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import bcrypt
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .engine import ReviewEngine, ReviewPriority, ReviewStatus
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # JWT Configuration - MUST use environment variable in production
 SECRET_KEY = os.environ.get(
     "JWT_SECRET_KEY",
-    secrets.token_urlsafe(32) if os.environ.get("ENVIRONMENT") == "development" else None
+    secrets.token_urlsafe(32) if os.environ.get("ENVIRONMENT") == "development" else None,
 )
 
 if SECRET_KEY is None:
@@ -46,12 +46,11 @@ if SECRET_KEY is None:
     )
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours default
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
+)  # 24 hours default
 
 security = HTTPBearer()
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # ============================================================================
@@ -107,12 +106,15 @@ class SpecimenSyncUpdate(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8") if isinstance(hashed_password, str) else hashed_password,
+    )
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password for storage."""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -136,19 +138,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         username = payload.get("sub")
         if username is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials"
             )
         return username
     except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
+    except jwt.InvalidTokenError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired"
-        )
-    except jwt.JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials"
         )
 
 
@@ -186,8 +183,7 @@ def create_mobile_app(
 
     # CORS configuration - restrict to specific origins
     allowed_origins = os.environ.get(
-        "ALLOWED_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000"
+        "ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000"
     ).split(",")
 
     app.add_middleware(
@@ -295,7 +291,7 @@ def create_mobile_app(
             logger.warning(f"Rate limit exceeded for login from {client_ip}")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many login attempts. Please try again in 15 minutes."
+                detail="Too many login attempts. Please try again in 15 minutes.",
             )
 
         # Increment attempt counter
@@ -306,29 +302,31 @@ def create_mobile_app(
 
         # Verify user exists and password matches (timing-safe)
         if username not in app.state.users:
-            # Use a dummy hash to prevent timing attacks
-            pwd_context.verify(password, "$2b$12$dummy.hash.to.prevent.timing.attacks")
+            # Use a dummy verification to prevent timing attacks
+            # This ensures failed lookups take the same time as password checks
+            try:
+                bcrypt.checkpw(
+                    b"dummy", b"$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.x1qKJqKJqKJqKO"
+                )
+            except Exception:
+                pass
             logger.warning(f"Failed login attempt for non-existent user: {username}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password"
             )
 
         hashed_password = app.state.users[username]
         if not verify_password(password, hashed_password):
             logger.warning(f"Failed login attempt for user: {username}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password"
             )
 
         # Reset rate limit on successful login
         rate_data["count"] = 0
 
         # Create access token
-        access_token = create_access_token(
-            data={"sub": username}
-        )
+        access_token = create_access_token(data={"sub": username})
 
         logger.info(f"Successful login for user: {username}")
 
@@ -337,7 +335,7 @@ def create_mobile_app(
             user={
                 "username": username,
                 "display_name": username.capitalize(),
-            }
+            },
         )
 
     @app.get("/api/v1/auth/me")
@@ -359,7 +357,7 @@ def create_mobile_app(
         flagged_only: bool = False,
         limit: int = 50,
         offset: int = 0,
-        username: str = Depends(verify_token)
+        username: str = Depends(verify_token),
     ):
         """
         Get prioritized review queue.
@@ -386,12 +384,12 @@ def create_mobile_app(
             status=status_enum,
             priority=priority_enum,
             flagged_only=flagged_only,
-            sort_by="priority"
+            sort_by="priority",
         )
 
         # Apply pagination
         total = len(queue)
-        queue = queue[offset:offset + limit]
+        queue = queue[offset : offset + limit]
 
         # Mobile-optimized response (minimal data)
         return {
@@ -406,7 +404,9 @@ def create_mobile_app(
                     "completeness": round(review.completeness_score, 1),
                     "critical_issues": len(review.critical_issues),
                     "warnings": len(review.warnings),
-                    "scientific_name": review.dwc_fields.get("scientificName", {}).get("value", "Unknown"),
+                    "scientific_name": review.dwc_fields.get("scientificName", {}).get(
+                        "value", "Unknown"
+                    ),
                     "catalog_number": review.dwc_fields.get("catalogNumber", {}).get("value", ""),
                 }
                 for review in queue
@@ -416,14 +416,11 @@ def create_mobile_app(
                 "offset": offset,
                 "limit": limit,
                 "has_more": offset + limit < total,
-            }
+            },
         }
 
     @app.get("/api/v1/specimen/{specimen_id}")
-    async def get_specimen(
-        specimen_id: str,
-        username: str = Depends(verify_token)
-    ):
+    async def get_specimen(specimen_id: str, username: str = Depends(verify_token)):
         """
         Get full specimen details.
 
@@ -495,9 +492,7 @@ def create_mobile_app(
 
     @app.put("/api/v1/specimen/{specimen_id}")
     async def update_specimen(
-        specimen_id: str,
-        request: UpdateSpecimenRequest,
-        username: str = Depends(verify_token)
+        specimen_id: str, request: UpdateSpecimenRequest, username: str = Depends(verify_token)
     ):
         """
         Update specimen review.
@@ -519,7 +514,7 @@ def create_mobile_app(
             status=status_enum,
             flagged=request.flagged,
             reviewed_by=username,
-            notes=request.notes
+            notes=request.notes,
         )
 
         # Handle priority change
@@ -539,7 +534,7 @@ def create_mobile_app(
         specimen_id: str,
         field_name: str,
         request: FieldCorrectionRequest,
-        username: str = Depends(verify_token)
+        username: str = Depends(verify_token),
     ):
         """
         Update a single field with suggestion acceptance tracking.
@@ -561,9 +556,7 @@ def create_mobile_app(
         }
 
         engine.update_review(
-            specimen_id=specimen_id,
-            corrections=correction_metadata,
-            reviewed_by=username
+            specimen_id=specimen_id, corrections=correction_metadata, reviewed_by=username
         )
 
         return {
@@ -574,45 +567,30 @@ def create_mobile_app(
         }
 
     @app.post("/api/v1/specimen/{specimen_id}/approve")
-    async def approve_specimen(
-        specimen_id: str,
-        username: str = Depends(verify_token)
-    ):
+    async def approve_specimen(specimen_id: str, username: str = Depends(verify_token)):
         """Quick approve specimen (mobile shortcut)."""
         engine.update_review(
-            specimen_id=specimen_id,
-            status=ReviewStatus.APPROVED,
-            reviewed_by=username
+            specimen_id=specimen_id, status=ReviewStatus.APPROVED, reviewed_by=username
         )
         return {"status": "approved", "specimen_id": specimen_id}
 
     @app.post("/api/v1/specimen/{specimen_id}/reject")
     async def reject_specimen(
-        specimen_id: str,
-        notes: str | None = None,
-        username: str = Depends(verify_token)
+        specimen_id: str, notes: str | None = None, username: str = Depends(verify_token)
     ):
         """Quick reject specimen (mobile shortcut)."""
         engine.update_review(
-            specimen_id=specimen_id,
-            status=ReviewStatus.REJECTED,
-            reviewed_by=username,
-            notes=notes
+            specimen_id=specimen_id, status=ReviewStatus.REJECTED, reviewed_by=username, notes=notes
         )
         return {"status": "rejected", "specimen_id": specimen_id}
 
     @app.post("/api/v1/specimen/{specimen_id}/flag")
     async def flag_specimen(
-        specimen_id: str,
-        notes: str | None = None,
-        username: str = Depends(verify_token)
+        specimen_id: str, notes: str | None = None, username: str = Depends(verify_token)
     ):
         """Flag specimen for expert attention (mobile shortcut)."""
         engine.update_review(
-            specimen_id=specimen_id,
-            flagged=True,
-            reviewed_by=username,
-            notes=notes
+            specimen_id=specimen_id, flagged=True, reviewed_by=username, notes=notes
         )
         return {"status": "flagged", "specimen_id": specimen_id}
 
@@ -621,10 +599,7 @@ def create_mobile_app(
     # ========================================================================
 
     @app.get("/api/v1/images/{specimen_id}")
-    async def get_image(
-        specimen_id: str,
-        username: str = Depends(verify_token)
-    ):
+    async def get_image(specimen_id: str, username: str = Depends(verify_token)):
         """
         Serve specimen image.
 
@@ -639,10 +614,7 @@ def create_mobile_app(
         raise HTTPException(404, "Image not found")
 
     @app.get("/api/v1/images/{specimen_id}/thumb")
-    async def get_thumbnail(
-        specimen_id: str,
-        username: str = Depends(verify_token)
-    ):
+    async def get_thumbnail(specimen_id: str, username: str = Depends(verify_token)):
         """
         Serve thumbnail image.
 
@@ -657,10 +629,7 @@ def create_mobile_app(
     # ========================================================================
 
     @app.post("/api/v1/sync/download")
-    async def download_batch(
-        request: BatchDownloadRequest,
-        username: str = Depends(verify_token)
-    ):
+    async def download_batch(request: BatchDownloadRequest, username: str = Depends(verify_token)):
         """
         Download batch of specimens for offline review.
 
@@ -672,10 +641,8 @@ def create_mobile_app(
 
         # Get batch
         queue = engine.get_review_queue(
-            status=status_enum,
-            priority=priority_enum,
-            sort_by="priority"
-        )[:request.limit]
+            status=status_enum, priority=priority_enum, sort_by="priority"
+        )[: request.limit]
 
         # Prepare batch (without images for now - too large)
         batch = [
@@ -695,8 +662,7 @@ def create_mobile_app(
 
     @app.post("/api/v1/sync/upload")
     async def upload_batch(
-        updates: list[SpecimenSyncUpdate],
-        username: str = Depends(verify_token)
+        updates: list[SpecimenSyncUpdate], username: str = Depends(verify_token)
     ):
         """
         Upload batch of offline changes.
@@ -719,20 +685,24 @@ def create_mobile_app(
                     status=status_enum,
                     flagged=update.flagged,
                     reviewed_by=username,
-                    notes=update.notes
+                    notes=update.notes,
                 )
 
-                results.append({
-                    "specimen_id": update.specimen_id,
-                    "status": "synced",
-                })
+                results.append(
+                    {
+                        "specimen_id": update.specimen_id,
+                        "status": "synced",
+                    }
+                )
             except Exception as e:
                 logger.error(f"Sync error for {update.specimen_id}: {e}")
-                results.append({
-                    "specimen_id": update.specimen_id,
-                    "status": "error",
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "specimen_id": update.specimen_id,
+                        "status": "error",
+                        "error": str(e),
+                    }
+                )
 
         return {
             "results": results,
@@ -781,9 +751,4 @@ if __name__ == "__main__":
         enable_gbif=True,
     )
 
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

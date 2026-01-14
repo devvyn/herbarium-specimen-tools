@@ -14,17 +14,11 @@ Uses FastAPI TestClient for endpoint testing.
 """
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from passlib.context import CryptContext
 
 from src.review.mobile_api import create_mobile_app, get_password_hash
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @pytest.fixture
@@ -193,7 +187,7 @@ class TestAuthentication:
         """Test accessing protected endpoint without token."""
         response = client.get("/api/v1/auth/me")
 
-        assert response.status_code == 403  # No Authorization header
+        assert response.status_code == 401  # Unauthorized (no credentials)
 
     def test_get_current_user_invalid_token(self, client):
         """Test accessing protected endpoint with invalid token."""
@@ -220,7 +214,7 @@ class TestReviewQueue:
         """Test getting queue without authentication."""
         response = client.get("/api/v1/queue")
 
-        assert response.status_code == 403
+        assert response.status_code == 401  # Unauthorized (no credentials)
 
     def test_get_queue_pagination(self, client, auth_headers):
         """Test queue pagination."""
@@ -236,9 +230,7 @@ class TestReviewQueue:
 
     def test_get_queue_status_filter(self, client, auth_headers):
         """Test filtering queue by status."""
-        response = client.get(
-            "/api/v1/queue", params={"status": "PENDING"}, headers=auth_headers
-        )
+        response = client.get("/api/v1/queue", params={"status": "PENDING"}, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -246,9 +238,7 @@ class TestReviewQueue:
 
     def test_get_queue_invalid_status(self, client, auth_headers):
         """Test queue with invalid status filter."""
-        response = client.get(
-            "/api/v1/queue", params={"status": "INVALID"}, headers=auth_headers
-        )
+        response = client.get("/api/v1/queue", params={"status": "INVALID"}, headers=auth_headers)
 
         assert response.status_code == 400
 
@@ -283,9 +273,7 @@ class TestSpecimenEndpoints:
             "notes": "Test notes",
         }
 
-        response = client.put(
-            "/api/v1/specimen/TEST-001", json=update_data, headers=auth_headers
-        )
+        response = client.put("/api/v1/specimen/TEST-001", json=update_data, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -316,9 +304,7 @@ class TestSpecimenEndpoints:
 
     def test_approve_specimen(self, client, auth_headers):
         """Test quick approve action."""
-        response = client.post(
-            "/api/v1/specimen/TEST-001/approve", headers=auth_headers
-        )
+        response = client.post("/api/v1/specimen/TEST-001/approve", headers=auth_headers)
 
         assert response.status_code == 200
         assert response.json()["status"] == "approved"
@@ -377,9 +363,7 @@ class TestOfflineSync:
         """Test downloading batch for offline work."""
         request_data = {"status": "PENDING", "limit": 10}
 
-        response = client.post(
-            "/api/v1/sync/download", json=request_data, headers=auth_headers
-        )
+        response = client.post("/api/v1/sync/download", json=request_data, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -399,9 +383,7 @@ class TestOfflineSync:
             }
         ]
 
-        response = client.post(
-            "/api/v1/sync/upload", json=updates, headers=auth_headers
-        )
+        response = client.post("/api/v1/sync/upload", json=updates, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -468,7 +450,8 @@ class TestErrorHandling:
 
     def test_invalid_json(self, client, auth_headers):
         """Test handling of invalid JSON."""
-        response = client.post(
+        # Use PUT endpoint which accepts JSON body
+        response = client.put(
             "/api/v1/specimen/TEST-001",
             data="invalid json",
             headers={**auth_headers, "Content-Type": "application/json"},
