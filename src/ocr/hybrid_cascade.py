@@ -10,7 +10,6 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 from .apple_vision import AppleVisionOCR
 from .rules_engine import RulesEngine
@@ -88,7 +87,7 @@ class HybridCascadeOCR:
 
     def extract(
         self, image_path: Path
-    ) -> Tuple[Dict[str, str], Dict[str, float], Dict[str, any]]:
+    ) -> tuple[dict[str, str], dict[str, float], dict[str, any]]:
         """
         Extract Darwin Core fields using hybrid cascade.
 
@@ -137,7 +136,7 @@ class HybridCascadeOCR:
                 return {}, {}, metadata
 
         # Stage 2: Rules Engine
-        logger.info(f"Stage 2: Rules Engine on OCR text")
+        logger.info("Stage 2: Rules Engine on OCR text")
         dwc_fields, confidences = self._stage2_rules_engine(ocr_text)
 
         metadata["stages_used"].append("rules_engine")
@@ -195,7 +194,7 @@ class HybridCascadeOCR:
 
         return dwc_claude, conf_claude, metadata
 
-    def _stage1_apple_vision(self, image_path: Path) -> Tuple[str, float, Optional[str]]:
+    def _stage1_apple_vision(self, image_path: Path) -> tuple[str, float, str | None]:
         """
         Stage 1: Extract text with Apple Vision.
 
@@ -212,7 +211,7 @@ class HybridCascadeOCR:
 
         return text, confidence, None
 
-    def _stage2_rules_engine(self, ocr_text: str) -> Tuple[Dict[str, str], Dict[str, float]]:
+    def _stage2_rules_engine(self, ocr_text: str) -> tuple[dict[str, str], dict[str, float]]:
         """
         Stage 2: Extract Darwin Core fields from OCR text using rules.
 
@@ -221,7 +220,7 @@ class HybridCascadeOCR:
         """
         return self.rules_engine.extract_fields(ocr_text)
 
-    def _stage3_claude_vision(self, image_path: Path) -> Tuple[Dict[str, str], Dict[str, float], Dict]:
+    def _stage3_claude_vision(self, image_path: Path) -> tuple[dict[str, str], dict[str, float], dict]:
         """
         Stage 3: Extract with Claude Vision (fallback).
 
@@ -342,7 +341,7 @@ Required fields (if visible):
 
 Return JSON with value and confidence (0.0-1.0) for each field."""
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get extraction statistics."""
         total = self.stats["total_extractions"]
 

@@ -7,7 +7,6 @@ a protocol-compliant interface.
 
 import time
 from pathlib import Path
-from typing import Optional
 
 from src.core.protocols import ExtractionResult
 from src.ocr.rules_engine import RulesEngine
@@ -42,7 +41,7 @@ class RulesEngineAdapter:
     def extract_fields(
         self,
         image_path: Path,
-        ocr_text: Optional[str] = None,
+        ocr_text: str | None = None,
     ) -> ExtractionResult:
         """Extract Darwin Core fields from specimen image.
 

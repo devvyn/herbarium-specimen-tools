@@ -11,7 +11,7 @@ Suitable for development and single-user scenarios.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.protocols import SpecimenData
 
@@ -34,7 +34,7 @@ class JSONStorage:
     def __init__(
         self,
         data_dir: Path,
-        state_file: Optional[Path] = None,
+        state_file: Path | None = None,
     ):
         """Initialize JSON storage.
 
@@ -46,7 +46,7 @@ class JSONStorage:
         self.state_file = state_file or (self.data_dir / "review_state.json")
 
         # In-memory cache of specimens
-        self._specimens: Dict[str, SpecimenData] = {}
+        self._specimens: dict[str, SpecimenData] = {}
 
         # Track which specimens have been modified
         self._dirty: set = set()
@@ -54,7 +54,7 @@ class JSONStorage:
         # Ensure directories exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-    def get(self, specimen_id: str) -> Optional[SpecimenData]:
+    def get(self, specimen_id: str) -> SpecimenData | None:
         """Get specimen by ID."""
         return self._specimens.get(specimen_id)
 
@@ -75,11 +75,11 @@ class JSONStorage:
 
     def list(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[SpecimenData]:
+    ) -> list[SpecimenData]:
         """List specimens with optional filters."""
         results = list(self._specimens.values())
 
@@ -97,8 +97,8 @@ class JSONStorage:
 
     def count(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
     ) -> int:
         """Count specimens matching filters."""
         if not status and not priority:
@@ -142,7 +142,7 @@ class JSONStorage:
 
         return count
 
-    def _record_to_specimen(self, record: Dict[str, Any]) -> SpecimenData:
+    def _record_to_specimen(self, record: dict[str, Any]) -> SpecimenData:
         """Convert extraction record to SpecimenData."""
         specimen_id = record.get("image", record.get("specimen_id", "unknown"))
 

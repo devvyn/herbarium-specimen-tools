@@ -5,8 +5,9 @@ Provides review engine for quality control and mobile-optimized API
 for field curation workflows.
 """
 
-from .engine import ReviewEngine, ReviewStatus, ReviewPriority, SpecimenReview
+from .engine import ReviewEngine, ReviewPriority, ReviewStatus, SpecimenReview
 from .validators import GBIFValidator, create_gbif_validator
+
 
 # Lazy import to avoid JWT requirement when only using engine classes
 def create_mobile_app(*args, **kwargs):

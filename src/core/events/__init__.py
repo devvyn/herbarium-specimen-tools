@@ -30,14 +30,16 @@ Usage:
         print(f"{event.timestamp}: {event.event_type}")
 """
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Type
+import builtins
 import json
 import logging
 import uuid
+from collections.abc import Callable, Iterator
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timezone
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +65,19 @@ class Event:
 
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     event_type: str = field(default="")
-    specimen_id: Optional[str] = None
+    specimen_id: str | None = None
     actor: str = "system"  # User or system that caused the event
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary for serialization."""
         return {k: v for k, v in asdict(self).items() if v is not None}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Event":
+    def from_dict(cls, data: dict[str, Any]) -> "Event":
         """Create event from dictionary."""
         event_type = data.get("event_type", "")
 
@@ -99,7 +101,7 @@ class SpecimenUpdated(Event):
     """Event: Specimen data modified."""
 
     event_type: str = field(default=EventType.SPECIMEN_UPDATED.value)
-    changed_fields: List[str] = field(default_factory=list)
+    changed_fields: list[str] = field(default_factory=list)
     reason: str = ""  # "correction", "re-extraction", "merge"
 
 
@@ -155,7 +157,7 @@ class ValidationCompleted(Event):
     validator: str = ""  # "gbif", "ipni"
     field_name: str = ""
     is_valid: bool = False
-    matched_name: Optional[str] = None
+    matched_name: str | None = None
     cache_hit: bool = False
 
 
@@ -191,7 +193,7 @@ class BatchCompleted(Event):
 
 
 # Registry mapping event type strings to classes
-EVENT_REGISTRY: Dict[str, Type[Event]] = {
+EVENT_REGISTRY: dict[str, type[Event]] = {
     EventType.SPECIMEN_CREATED.value: SpecimenCreated,
     EventType.SPECIMEN_UPDATED.value: SpecimenUpdated,
     EventType.SPECIMEN_DELETED.value: SpecimenDeleted,
@@ -223,7 +225,7 @@ class EventStore:
         """
         self.log_path = Path(log_path)
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        self._handlers: Dict[str, List[Callable[[Event], None]]] = {}
+        self._handlers: dict[str, list[Callable[[Event], None]]] = {}
 
     def append(self, event: Event) -> None:
         """Append event to log and notify handlers.
@@ -242,10 +244,10 @@ class EventStore:
 
     def replay(
         self,
-        specimen_id: Optional[str] = None,
-        event_type: Optional[str] = None,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+        specimen_id: str | None = None,
+        event_type: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
     ) -> Iterator[Event]:
         """Replay events with optional filters.
 
@@ -287,7 +289,7 @@ class EventStore:
                 except (json.JSONDecodeError, KeyError) as e:
                     logger.warning(f"Failed to parse event: {e}")
 
-    def get_specimen_history(self, specimen_id: str) -> List[Event]:
+    def get_specimen_history(self, specimen_id: str) -> list[Event]:
         """Get complete event history for a specimen.
 
         Args:
@@ -298,7 +300,7 @@ class EventStore:
         """
         return list(self.replay(specimen_id=specimen_id))
 
-    def get_latest_status(self, specimen_id: str) -> Optional[str]:
+    def get_latest_status(self, specimen_id: str) -> str | None:
         """Get current status by replaying status changes.
 
         Args:
@@ -318,8 +320,8 @@ class EventStore:
 
     def count_events(
         self,
-        event_type: Optional[str] = None,
-        since: Optional[datetime] = None,
+        event_type: str | None = None,
+        since: datetime | None = None,
     ) -> int:
         """Count events matching filters.
 
@@ -437,7 +439,7 @@ class EventSourcedStorage:
 
         return result
 
-    def list(self, **kwargs: Any) -> List[Any]:
+    def list(self, **kwargs: Any) -> list[Any]:
         """List specimens (passthrough)."""
         return self._storage.list(**kwargs)
 
@@ -495,7 +497,7 @@ class EventSourcedStorage:
         validator: str,
         field_name: str,
         is_valid: bool,
-        matched_name: Optional[str] = None,
+        matched_name: str | None = None,
         cache_hit: bool = False,
     ) -> None:
         """Record a validation completion event."""
@@ -511,7 +513,7 @@ class EventSourcedStorage:
             )
         )
 
-    def _detect_changes(self, old: Any, new: Any) -> List[str]:
+    def _detect_changes(self, old: Any, new: Any) -> builtins.list[str]:
         """Detect which fields changed between specimens."""
         changed = []
 

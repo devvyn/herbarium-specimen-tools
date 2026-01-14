@@ -88,20 +88,20 @@ class OCRResult:
 
     text: str
     confidence: float
-    regions: List[Dict[str, Any]]  # Bounding boxes with text
-    metadata: Dict[str, Any]  # Engine-specific metadata
+    regions: list[dict[str, Any]]  # Bounding boxes with text
+    metadata: dict[str, Any]  # Engine-specific metadata
 
 
 @dataclass
 class ExtractionResult:
     """Result from field extraction."""
 
-    fields: Dict[str, Dict[str, Any]]  # field_name -> {value, confidence, ...}
+    fields: dict[str, dict[str, Any]]  # field_name -> {value, confidence, ...}
     model: str
     provider: str
     processing_time_ms: float
     cost_usd: float
-    raw_response: Optional[str] = None
+    raw_response: str | None = None
 
 
 @runtime_checkable
@@ -152,7 +152,7 @@ class FieldExtractor(Protocol):
     def extract_fields(
         self,
         image_path: Path,
-        ocr_text: Optional[str] = None,
+        ocr_text: str | None = None,
     ) -> ExtractionResult:
         """Extract Darwin Core fields from specimen image.
 
@@ -171,18 +171,18 @@ class SpecimenData:
     """Core specimen data for storage."""
 
     specimen_id: str
-    dwc_fields: Dict[str, Dict[str, Any]]
+    dwc_fields: dict[str, dict[str, Any]]
     status: str
     priority: str
-    metadata: Dict[str, Any]
-    ocr_regions: Optional[List[Dict[str, Any]]] = None  # Bounding boxes from OCR
+    metadata: dict[str, Any]
+    ocr_regions: list[dict[str, Any]] | None = None  # Bounding boxes from OCR
 
 
 @runtime_checkable
 class SpecimenStorage(Protocol):
     """Protocol for specimen data storage backends."""
 
-    def get(self, specimen_id: str) -> Optional[SpecimenData]:
+    def get(self, specimen_id: str) -> SpecimenData | None:
         """Get specimen by ID."""
         ...
 
@@ -196,18 +196,18 @@ class SpecimenStorage(Protocol):
 
     def list(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[SpecimenData]:
+    ) -> list[SpecimenData]:
         """List specimens with optional filters."""
         ...
 
     def count(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
     ) -> int:
         """Count specimens matching filters."""
         ...
@@ -225,7 +225,7 @@ class ValidationService(Protocol):
     def validate_taxonomy(
         self,
         scientific_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate scientific name against authoritative source.
 
         Returns:
@@ -241,10 +241,10 @@ class ValidationService(Protocol):
 
     def validate_locality(
         self,
-        country: Optional[str],
-        state_province: Optional[str],
-        locality: Optional[str],
-    ) -> Dict[str, Any]:
+        country: str | None,
+        state_province: str | None,
+        locality: str | None,
+    ) -> dict[str, Any]:
         """Validate geographic locality.
 
         Returns:

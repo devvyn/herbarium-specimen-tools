@@ -13,9 +13,10 @@ Suitable for single-user scenarios with larger datasets.
 import json
 import logging
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
 
 from src.core.protocols import SpecimenData
 
@@ -66,7 +67,7 @@ class SQLiteStorage:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
         self._init_db()
 
     def _init_db(self) -> None:
@@ -109,7 +110,7 @@ class SQLiteStorage:
             self._conn.rollback()
             raise
 
-    def get(self, specimen_id: str) -> Optional[SpecimenData]:
+    def get(self, specimen_id: str) -> SpecimenData | None:
         """Get specimen by ID."""
         with self._get_connection() as conn:
             cursor = conn.execute(
@@ -159,14 +160,14 @@ class SQLiteStorage:
 
     def list(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[SpecimenData]:
+    ) -> list[SpecimenData]:
         """List specimens with optional filters."""
         query = "SELECT * FROM specimens WHERE 1=1"
-        params: List[Any] = []
+        params: list[Any] = []
 
         if status:
             query += " AND status = ?"
@@ -184,12 +185,12 @@ class SQLiteStorage:
 
     def count(
         self,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
     ) -> int:
         """Count specimens matching filters."""
         query = "SELECT COUNT(*) FROM specimens WHERE 1=1"
-        params: List[Any] = []
+        params: list[Any] = []
 
         if status:
             query += " AND status = ?"
@@ -246,7 +247,7 @@ class SQLiteStorage:
         logger.info(f"Loaded {count} specimens from {jsonl_path}")
         return count
 
-    def _record_to_specimen(self, record: Dict[str, Any]) -> SpecimenData:
+    def _record_to_specimen(self, record: dict[str, Any]) -> SpecimenData:
         """Convert extraction record to SpecimenData."""
         specimen_id = record.get("image", record.get("specimen_id", "unknown"))
 

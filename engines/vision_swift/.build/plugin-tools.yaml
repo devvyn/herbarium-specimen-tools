@@ -1,0 +1,81 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "PackageStructure": ["<PackageStructure>"]
+  "VisionSwift-arm64-apple-macosx26.0-debug.module": ["<VisionSwift-arm64-apple-macosx26.0-debug.module>"]
+  "main": ["<VisionSwift-arm64-apple-macosx26.0-debug.module>","<vision_swift-arm64-apple-macosx26.0-debug.exe>"]
+  "test": ["<VisionSwift-arm64-apple-macosx26.0-debug.module>","<vision_swift-arm64-apple-macosx26.0-debug.exe>"]
+  "vision_swift-arm64-apple-macosx26.0-debug.exe": ["<vision_swift-arm64-apple-macosx26.0-debug.exe>"]
+default: "main"
+nodes:
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Sources/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift":
+    is-mutated: true
+commands:
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Sources/VisionSwift/main.swift"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/sources"]
+    description: "Write auxiliary file /Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/sources"
+
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift-entitlement.plist"]
+    description: "Write auxiliary file /Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift-entitlement.plist"
+
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swift.o"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift.product/Objects.LinkFileList"
+
+  "<VisionSwift-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swift.o","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/Modules/VisionSwift.swiftmodule"]
+    outputs: ["<VisionSwift-arm64-apple-macosx26.0-debug.module>"]
+
+  "<vision_swift-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<vision_swift-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<vision_swift-arm64-apple-macosx26.0-debug.exe>"]
+
+  "C.VisionSwift-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Sources/VisionSwift/main.swift","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/sources"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swift.o","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/Modules/VisionSwift.swiftmodule"]
+    description: "Compiling Swift Module 'VisionSwift' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","VisionSwift","-emit-dependencies","-emit-module","-emit-module-path","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/Modules/VisionSwift.swiftmodule","-output-file-map","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/output-file-map.json","-incremental","-c","@/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/sources","-I","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx12.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","VisionSwift_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g"]
+
+  "C.vision_swift-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swift.o","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift.product/Objects.LinkFileList"]
+    outputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/vision_swift"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug","-o","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift","-module-name","vision_swift","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_VisionSwift_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx12.0","-Xlinker","-add_ast_path","-Xlinker","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/Modules/VisionSwift.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.vision_swift-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift-entitlement.plist"]
+    outputs: ["<vision_swift-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/vision_swift"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift-entitlement.plist","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/vision_swift"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Sources/","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Package.swift","/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

@@ -19,7 +19,6 @@ from dataclasses import field as dataclass_field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -55,27 +54,27 @@ class SpecimenReview:
 
     # Identity
     specimen_id: str
-    sha256_hash: Optional[str] = None
+    sha256_hash: str | None = None
 
     # Extraction data
-    dwc_fields: Dict = dataclass_field(default_factory=dict)
-    extraction_timestamp: Optional[str] = None
-    model: Optional[str] = None
-    provider: Optional[str] = None
-    extraction_method: Optional[str] = None
-    ocr_engine: Optional[str] = None
+    dwc_fields: dict = dataclass_field(default_factory=dict)
+    extraction_timestamp: str | None = None
+    model: str | None = None
+    provider: str | None = None
+    extraction_method: str | None = None
+    ocr_engine: str | None = None
     converted_from_csv: bool = False
-    provenance_history: List[dict] = dataclass_field(default_factory=list)
+    provenance_history: list[dict] = dataclass_field(default_factory=list)
 
     # Raw extraction (immutable original AI output)
-    raw_extraction: Optional[Dict] = None  # Set once at creation, never modified
+    raw_extraction: dict | None = None  # Set once at creation, never modified
 
     # GBIF validation
     gbif_taxonomy_verified: bool = False
     gbif_taxonomy_confidence: float = 0.0
-    gbif_taxonomy_issues: List[str] = dataclass_field(default_factory=list)
+    gbif_taxonomy_issues: list[str] = dataclass_field(default_factory=list)
     gbif_locality_verified: bool = False
-    gbif_locality_issues: List[str] = dataclass_field(default_factory=list)
+    gbif_locality_issues: list[str] = dataclass_field(default_factory=list)
 
     # Quality metrics
     completeness_score: float = 0.0  # 0-100%
@@ -87,31 +86,31 @@ class SpecimenReview:
     status: ReviewStatus = ReviewStatus.PENDING
     flagged: bool = False  # Independent attention marker
     reextraction_requested: bool = False  # Request re-extraction with different params
-    reextraction_regions: List[Dict] = dataclass_field(default_factory=list)  # Specific regions to re-extract
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[str] = None
-    corrections: Dict = dataclass_field(default_factory=dict)
-    notes: Optional[str] = None  # General notes (exported with DwC data)
-    review_notes: Optional[str] = None  # Workflow feedback (not exported)
+    reextraction_regions: list[dict] = dataclass_field(default_factory=list)  # Specific regions to re-extract
+    reviewed_by: str | None = None
+    reviewed_at: str | None = None
+    corrections: dict = dataclass_field(default_factory=dict)
+    notes: str | None = None  # General notes (exported with DwC data)
+    review_notes: str | None = None  # Workflow feedback (not exported)
 
     # Entrant workflow tracking
-    assigned_to: Optional[str] = None  # Data entrant assigned to review
-    entrant_reviewed_by: Optional[str] = None  # Who performed entrant review
-    entrant_reviewed_at: Optional[str] = None
+    assigned_to: str | None = None  # Data entrant assigned to review
+    entrant_reviewed_by: str | None = None  # Who performed entrant review
+    entrant_reviewed_at: str | None = None
     entrant_approved: bool = False  # Did entrant approve?
-    entrant_notes: Optional[str] = None
-    supervisor_approved_by: Optional[str] = None  # Final supervisor approval
-    supervisor_approved_at: Optional[str] = None
+    entrant_notes: str | None = None
+    supervisor_approved_by: str | None = None  # Final supervisor approval
+    supervisor_approved_at: str | None = None
 
     # Issues
-    critical_issues: List[str] = dataclass_field(default_factory=list)
-    warnings: List[str] = dataclass_field(default_factory=list)
+    critical_issues: list[str] = dataclass_field(default_factory=list)
+    warnings: list[str] = dataclass_field(default_factory=list)
 
     # Export tracking
     export_status: str = "not_exported"  # "not_exported", "exported", "modified_after_export"
-    last_export_timestamp: Optional[str] = None
+    last_export_timestamp: str | None = None
     export_count: int = 0
-    export_history: List[dict] = dataclass_field(default_factory=list)
+    export_history: list[dict] = dataclass_field(default_factory=list)
 
     def calculate_quality_score(self):
         """Calculate overall quality score from components."""
@@ -137,7 +136,7 @@ class SpecimenReview:
             self.priority = ReviewPriority.MINIMAL
 
     def apply_correction(
-        self, field: str, new_value: str, corrected_by: str, reason: Optional[str] = None
+        self, field: str, new_value: str, corrected_by: str, reason: str | None = None
     ):
         """
         Apply a correction to a field with full audit trail.
@@ -190,11 +189,11 @@ class SpecimenReview:
         self.last_export_timestamp = export_record["export_timestamp"]
         self.export_count += 1
 
-    def get_corrected_fields(self) -> List[str]:
+    def get_corrected_fields(self) -> list[str]:
         """Get list of field names that have been corrected."""
         return list(self.corrections.keys())
 
-    def get_uncorrected_fields(self) -> List[str]:
+    def get_uncorrected_fields(self) -> list[str]:
         """Get list of field names that are still raw AI output."""
         if not self.raw_extraction:
             return []
@@ -221,7 +220,7 @@ class SpecimenReview:
         self.reviewed_by = assigned_by
         self.reviewed_at = datetime.utcnow().isoformat() + "Z"
 
-    def entrant_approve(self, entrant_username: str, notes: Optional[str] = None):
+    def entrant_approve(self, entrant_username: str, notes: str | None = None):
         """
         Mark specimen as approved by data entrant.
 
@@ -374,7 +373,7 @@ class ReviewEngine:
             gbif_validator: Optional GBIFValidator instance
         """
         self.gbif_validator = gbif_validator
-        self.reviews: Dict[str, SpecimenReview] = {}
+        self.reviews: dict[str, SpecimenReview] = {}
 
         logger.info("Review engine initialized")
 
@@ -468,7 +467,7 @@ class ReviewEngine:
         """Calculate average confidence across all fields."""
         confidences = []
 
-        for field, field_data in review.dwc_fields.items():
+        for _field, field_data in review.dwc_fields.items():
             if isinstance(field_data, dict):
                 conf = field_data.get("confidence", 0.0)
                 if conf > 0:
@@ -534,11 +533,11 @@ class ReviewEngine:
 
     def get_review_queue(
         self,
-        status: Optional[ReviewStatus] = None,
-        priority: Optional[ReviewPriority] = None,
+        status: ReviewStatus | None = None,
+        priority: ReviewPriority | None = None,
         flagged_only: bool = False,
         sort_by: str = "priority",
-    ) -> List[SpecimenReview]:
+    ) -> list[SpecimenReview]:
         """
         Get prioritized review queue with orthogonal filtering.
 
@@ -573,18 +572,18 @@ class ReviewEngine:
 
         return reviews
 
-    def get_review(self, specimen_id: str) -> Optional[SpecimenReview]:
+    def get_review(self, specimen_id: str) -> SpecimenReview | None:
         """Get review record for a specific specimen."""
         return self.reviews.get(specimen_id)
 
     def update_review(
         self,
         specimen_id: str,
-        corrections: Optional[Dict] = None,
-        status: Optional[ReviewStatus] = None,
-        flagged: Optional[bool] = None,
-        reviewed_by: Optional[str] = None,
-        notes: Optional[str] = None,
+        corrections: dict | None = None,
+        status: ReviewStatus | None = None,
+        flagged: bool | None = None,
+        reviewed_by: str | None = None,
+        notes: str | None = None,
     ):
         """
         Update review record.
@@ -655,7 +654,7 @@ class ReviewEngine:
         review.assign_to_entrant(entrant_username, assigned_by)
         logger.info(f"Assigned {specimen_id} to entrant {entrant_username} by {assigned_by}")
 
-    def entrant_approve(self, specimen_id: str, entrant_username: str, notes: Optional[str] = None):
+    def entrant_approve(self, specimen_id: str, entrant_username: str, notes: str | None = None):
         """
         Mark specimen as approved by data entrant.
 
@@ -721,14 +720,14 @@ class ReviewEngine:
         review.submit_for_entrant_review(curator_username)
         logger.info(f"Specimen {specimen_id} submitted for entrant review by {curator_username}")
 
-    def get_assigned_specimens(self, entrant_username: str) -> List[SpecimenReview]:
+    def get_assigned_specimens(self, entrant_username: str) -> list[SpecimenReview]:
         """Get all specimens assigned to a specific entrant."""
         return [
             review for review in self.reviews.values()
             if review.assigned_to == entrant_username
         ]
 
-    def get_ready_for_export(self) -> List[SpecimenReview]:
+    def get_ready_for_export(self) -> list[SpecimenReview]:
         """Get all specimens ready for export."""
         return [
             review for review in self.reviews.values()

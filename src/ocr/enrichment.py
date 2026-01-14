@@ -16,12 +16,13 @@ Usage:
 
 import logging
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any
 
 from src.ocr.apple_vision import AppleVisionOCR
-from src.spatial import classify_zone, BoundingBox
+from src.spatial import BoundingBox, classify_zone
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +33,16 @@ class EnrichmentResult:
 
     specimen_id: str
     success: bool
-    regions: Optional[List[Dict[str, Any]]] = None
-    error: Optional[str] = None
+    regions: list[dict[str, Any]] | None = None
+    error: str | None = None
     processing_time_ms: float = 0.0
 
 
 def enrich_specimen(
     image_path: Path,
-    ocr_engine: Optional[AppleVisionOCR] = None,
+    ocr_engine: AppleVisionOCR | None = None,
     include_zones: bool = True,
-) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+) -> tuple[list[dict[str, Any]], str | None]:
     """
     Run OCR on specimen image to capture text regions with coordinates.
 
@@ -99,11 +100,11 @@ def enrich_specimen(
 
 
 def batch_enrich(
-    specimen_ids: List[str],
-    resolve_image: Callable[[str], Optional[Path]],
-    ocr_engine: Optional[AppleVisionOCR] = None,
+    specimen_ids: list[str],
+    resolve_image: Callable[[str], Path | None],
+    ocr_engine: AppleVisionOCR | None = None,
     include_zones: bool = True,
-    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    progress_callback: Callable[[int, int, str], None] | None = None,
 ) -> Iterator[EnrichmentResult]:
     """
     Batch enrich specimens with OCR regions.
@@ -176,7 +177,7 @@ def batch_enrich(
 def enrich_and_update_specimen(
     specimen: Any,
     image_path: Path,
-    ocr_engine: Optional[AppleVisionOCR] = None,
+    ocr_engine: AppleVisionOCR | None = None,
 ) -> EnrichmentResult:
     """
     Enrich a specimen object with OCR regions in-place.
@@ -216,7 +217,7 @@ def enrich_and_update_specimen(
     )
 
 
-def get_enrichment_stats(results: List[EnrichmentResult]) -> Dict[str, Any]:
+def get_enrichment_stats(results: list[EnrichmentResult]) -> dict[str, Any]:
     """
     Calculate statistics from enrichment results.
 

@@ -7,7 +7,6 @@ Centralized configuration from environment variables with sensible defaults.
 import os
 import secrets
 from pathlib import Path
-from typing import Optional
 
 
 class Config:

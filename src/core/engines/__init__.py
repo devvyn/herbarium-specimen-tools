@@ -45,10 +45,10 @@ class EngineRegistry:
 
     def __init__(self):
         """Initialize engine registry."""
-        self._ocr_engines: Dict[str, Type[OCREngine]] = {}
-        self._field_extractors: Dict[str, Type[FieldExtractor]] = {}
-        self._ocr_instances: Dict[str, OCREngine] = {}
-        self._extractor_instances: Dict[str, FieldExtractor] = {}
+        self._ocr_engines: dict[str, type[OCREngine]] = {}
+        self._field_extractors: dict[str, type[FieldExtractor]] = {}
+        self._ocr_instances: dict[str, OCREngine] = {}
+        self._extractor_instances: dict[str, FieldExtractor] = {}
 
         # Register built-in engines
         self._register_builtin_engines()
@@ -64,7 +64,7 @@ class EngineRegistry:
     def register_ocr_engine(
         self,
         name: str,
-        engine_class: Type[OCREngine],
+        engine_class: type[OCREngine],
     ) -> None:
         """Register an OCR engine class.
 
@@ -77,7 +77,7 @@ class EngineRegistry:
     def register_field_extractor(
         self,
         name: str,
-        extractor_class: Type[FieldExtractor],
+        extractor_class: type[FieldExtractor],
     ) -> None:
         """Register a field extractor class.
 
@@ -87,7 +87,7 @@ class EngineRegistry:
         """
         self._field_extractors[name] = extractor_class
 
-    def get_ocr_engine(self, name: str) -> Optional[OCREngine]:
+    def get_ocr_engine(self, name: str) -> OCREngine | None:
         """Get OCR engine instance by name.
 
         Creates instance on first access (lazy initialization).
@@ -106,7 +106,7 @@ class EngineRegistry:
 
         return self._ocr_instances[name]
 
-    def get_field_extractor(self, name: str) -> Optional[FieldExtractor]:
+    def get_field_extractor(self, name: str) -> FieldExtractor | None:
         """Get field extractor instance by name.
 
         Creates instance on first access (lazy initialization).
@@ -125,15 +125,15 @@ class EngineRegistry:
 
         return self._extractor_instances[name]
 
-    def list_ocr_engines(self) -> List[str]:
+    def list_ocr_engines(self) -> list[str]:
         """List registered OCR engine names."""
         return list(self._ocr_engines.keys())
 
-    def list_field_extractors(self) -> List[str]:
+    def list_field_extractors(self) -> list[str]:
         """List registered field extractor names."""
         return list(self._field_extractors.keys())
 
-    def get_available_ocr_engines(self) -> List[str]:
+    def get_available_ocr_engines(self) -> list[str]:
         """List OCR engines available on this system."""
         available = []
         for name in self._ocr_engines:
@@ -144,8 +144,8 @@ class EngineRegistry:
 
     def get_fallback_chain(
         self,
-        preferred: List[str],
-    ) -> List[OCREngine]:
+        preferred: list[str],
+    ) -> list[OCREngine]:
         """Get ordered list of available engines from preference list.
 
         Args:
@@ -163,7 +163,7 @@ class EngineRegistry:
 
 
 # Module-level singleton
-_registry: Optional[EngineRegistry] = None
+_registry: EngineRegistry | None = None
 
 
 def get_engine_registry() -> EngineRegistry:

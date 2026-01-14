@@ -12,7 +12,7 @@ import hashlib
 import json
 import logging
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from functools import wraps
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-def capture_git_provenance(repo_root: Optional[Path] = None) -> Dict:
+def capture_git_provenance(repo_root: Path | None = None) -> dict:
     """Capture comprehensive git repository state.
 
     Returns dict with git_commit, git_branch, git_dirty flags.
@@ -90,7 +90,7 @@ def capture_git_provenance(repo_root: Optional[Path] = None) -> Dict:
     return git_info
 
 
-def capture_system_info() -> Dict:
+def capture_system_info() -> dict:
     """Capture system environment information for reproducibility."""
     import platform
     import sys
@@ -102,7 +102,7 @@ def capture_system_info() -> Dict:
     }
 
 
-def get_code_version(repo_root: Optional[Path] = None) -> str:
+def get_code_version(repo_root: Path | None = None) -> str:
     """Get current git commit hash for version tracking."""
     return capture_git_provenance(repo_root).get("git_commit_short", "unknown")
 
@@ -114,10 +114,10 @@ def get_content_hash(content: str) -> str:
 
 def create_manifest(
     version: str,
-    git_info: Optional[Dict] = None,
-    system_info: Optional[Dict] = None,
-    custom_metadata: Optional[Dict] = None,
-) -> Dict:
+    git_info: dict | None = None,
+    system_info: dict | None = None,
+    custom_metadata: dict | None = None,
+) -> dict:
     """Create standardized manifest with provenance metadata.
 
     Args:
@@ -143,7 +143,7 @@ def create_manifest(
     manifest = {
         "provenance": {
             "version": version,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **git_info,
         },
         "system": system_info,
@@ -155,7 +155,7 @@ def create_manifest(
     return manifest
 
 
-def save_manifest(manifest: Dict, output_path: Path) -> None:
+def save_manifest(manifest: dict, output_path: Path) -> None:
     """Save manifest to JSON file.
 
     Args:
@@ -169,7 +169,7 @@ def save_manifest(manifest: Dict, output_path: Path) -> None:
     logger.info(f"Manifest written to {output_path}")
 
 
-def validate_reproducibility(manifest_path: Path) -> Tuple[bool, List[str]]:
+def validate_reproducibility(manifest_path: Path) -> tuple[bool, list[str]]:
     """Validate that current environment matches manifest provenance.
 
     Checks if current git state matches manifest for reproducibility.

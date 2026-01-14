@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/master.swiftdeps"
+  },
+  "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/Sources/VisionSwift/main.swift": {
+    "dependencies": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.d",
+    "object": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swift.o",
+    "swiftmodule": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.swiftdeps",
+    "diagnostics": "/Users/devvynmurphy/Documents/pinned/active-projects/herbarium-specimen-tools/engines/vision_swift/.build/arm64-apple-macosx/debug/VisionSwift.build/main.dia"
+  }
+}

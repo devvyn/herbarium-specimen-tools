@@ -8,7 +8,6 @@ These definitions are shared across extraction and review workflows.
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
 # Required fields for specimen completeness scoring
 DWC_REQUIRED_FIELDS = [
     "catalogNumber",
@@ -76,57 +75,57 @@ class DwcRecord:
     """
 
     # Core identification
-    occurrenceID: Optional[str] = None
-    catalogNumber: Optional[str] = None
-    otherCatalogNumbers: Optional[str] = None
-    institutionCode: Optional[str] = None
-    collectionCode: Optional[str] = None
+    occurrenceID: str | None = None
+    catalogNumber: str | None = None
+    otherCatalogNumbers: str | None = None
+    institutionCode: str | None = None
+    collectionCode: str | None = None
 
     # Collection event
-    recordedBy: Optional[str] = None
-    recordNumber: Optional[str] = None
-    eventDate: Optional[str] = None
-    verbatimEventDate: Optional[str] = None
+    recordedBy: str | None = None
+    recordNumber: str | None = None
+    eventDate: str | None = None
+    verbatimEventDate: str | None = None
 
     # Location
-    country: Optional[str] = None
-    stateProvince: Optional[str] = None
-    county: Optional[str] = None
-    municipality: Optional[str] = None
-    locality: Optional[str] = None
-    verbatimLocality: Optional[str] = None
-    habitat: Optional[str] = None
-    decimalLatitude: Optional[str] = None
-    decimalLongitude: Optional[str] = None
-    minimumElevationInMeters: Optional[str] = None
-    maximumElevationInMeters: Optional[str] = None
+    country: str | None = None
+    stateProvince: str | None = None
+    county: str | None = None
+    municipality: str | None = None
+    locality: str | None = None
+    verbatimLocality: str | None = None
+    habitat: str | None = None
+    decimalLatitude: str | None = None
+    decimalLongitude: str | None = None
+    minimumElevationInMeters: str | None = None
+    maximumElevationInMeters: str | None = None
 
     # Taxonomy
-    scientificName: Optional[str] = None
-    scientificNameAuthorship: Optional[str] = None
-    family: Optional[str] = None
-    genus: Optional[str] = None
-    specificEpithet: Optional[str] = None
-    infraspecificEpithet: Optional[str] = None
-    taxonRank: Optional[str] = None
+    scientificName: str | None = None
+    scientificNameAuthorship: str | None = None
+    family: str | None = None
+    genus: str | None = None
+    specificEpithet: str | None = None
+    infraspecificEpithet: str | None = None
+    taxonRank: str | None = None
 
     # Identification
-    identifiedBy: Optional[str] = None
-    dateIdentified: Optional[str] = None
-    identificationRemarks: Optional[str] = None
-    typeStatus: Optional[str] = None
+    identifiedBy: str | None = None
+    dateIdentified: str | None = None
+    identificationRemarks: str | None = None
+    typeStatus: str | None = None
 
     # Additional
-    basisOfRecord: Optional[str] = None
-    preparations: Optional[str] = None
-    associatedTaxa: Optional[str] = None
-    occurrenceRemarks: Optional[str] = None
+    basisOfRecord: str | None = None
+    preparations: str | None = None
+    associatedTaxa: str | None = None
+    occurrenceRemarks: str | None = None
 
     # Confidence scores per field (not part of DwC standard)
-    _confidence: Dict[str, float] = field(default_factory=dict)
+    _confidence: dict[str, float] = field(default_factory=dict)
 
     # Validation flags
-    _flags: List[str] = field(default_factory=list)
+    _flags: list[str] = field(default_factory=list)
 
     def set_field(self, field_name: str, value: str, confidence: float = 1.0):
         """Set a field value with confidence score."""
@@ -138,7 +137,7 @@ class DwcRecord:
         """Get confidence score for a field."""
         return self._confidence.get(field_name, 0.0)
 
-    def get_completeness(self, required_fields: Optional[List[str]] = None) -> float:
+    def get_completeness(self, required_fields: list[str] | None = None) -> float:
         """Calculate completeness as percentage of required fields present."""
         fields = required_fields or DWC_REQUIRED_FIELDS
         present = sum(1 for f in fields if getattr(self, f, None))
@@ -150,7 +149,7 @@ class DwcRecord:
             return 0.0
         return sum(self._confidence.values()) / len(self._confidence)
 
-    def to_dict(self, include_empty: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_empty: bool = False) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         result = {}
         for field_name in DWC_ALL_FIELDS:
@@ -159,7 +158,7 @@ class DwcRecord:
                 result[field_name] = value or ""
         return result
 
-    def to_dict_with_confidence(self) -> Dict[str, Dict[str, Any]]:
+    def to_dict_with_confidence(self) -> dict[str, dict[str, Any]]:
         """Convert to dictionary with confidence scores (for mobile API)."""
         result = {}
         for field_name in DWC_ALL_FIELDS:
@@ -172,7 +171,7 @@ class DwcRecord:
         return result
 
     @classmethod
-    def from_extraction(cls, data: Dict[str, Any]) -> "DwcRecord":
+    def from_extraction(cls, data: dict[str, Any]) -> "DwcRecord":
         """Create from extraction output (with confidence scores).
 
         Handles both formats:

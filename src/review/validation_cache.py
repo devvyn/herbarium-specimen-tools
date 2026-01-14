@@ -7,7 +7,7 @@ Provides 3,600x speedup on repeated validations by caching GBIF API responses.
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class ValidationCache:
@@ -52,7 +52,7 @@ class ValidationCache:
         temp_file.write_text(json.dumps(self.cache, indent=2))
         temp_file.replace(self.cache_file)
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get cached value if exists and not expired.
 

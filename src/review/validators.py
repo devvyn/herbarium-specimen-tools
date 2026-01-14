@@ -12,9 +12,8 @@ Features:
 """
 
 import logging
-from typing import Dict, Optional, Tuple
 
-from pygbif import species, occurrences
+from pygbif import occurrences, species
 
 from .validation_cache import ValidationCache
 
@@ -34,7 +33,7 @@ class GBIFValidator:
         min_confidence_score: float = 0.80,
         enable_fuzzy_matching: bool = True,
         enable_occurrence_validation: bool = False,
-        cache: Optional[ValidationCache] = None,
+        cache: ValidationCache | None = None,
         enable_cache: bool = True,
     ):
         """
@@ -62,7 +61,7 @@ class GBIFValidator:
             f"fuzzy: {enable_fuzzy_matching}, cache: {enable_cache})"
         )
 
-    def verify_taxonomy(self, record: Dict) -> Tuple[Dict, Dict]:
+    def verify_taxonomy(self, record: dict) -> tuple[dict, dict]:
         """
         Verify taxonomic information with GBIF.
 
@@ -167,7 +166,7 @@ class GBIFValidator:
                 "gbif_issues": [f"validation_error: {str(e)}"],
             }
 
-    def verify_locality(self, record: Dict) -> Tuple[Dict, Dict]:
+    def verify_locality(self, record: dict) -> tuple[dict, dict]:
         """
         Verify geographic information with GBIF.
 
@@ -273,7 +272,7 @@ class GBIFValidator:
             logger.error(f"Suggestion lookup error: {e}")
             return []
 
-    def get_cache_stats(self) -> Optional[Dict]:
+    def get_cache_stats(self) -> dict | None:
         """
         Get cache statistics (hit rate, total entries, etc.).
 
@@ -291,7 +290,7 @@ class GBIFValidator:
             logger.info("Validation cache cleared")
 
 
-def create_gbif_validator(config: Optional[Dict] = None) -> GBIFValidator:
+def create_gbif_validator(config: dict | None = None) -> GBIFValidator:
     """
     Create GBIF validator from configuration.
 

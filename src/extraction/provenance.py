@@ -15,19 +15,11 @@ This module adds:
 
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
 # Re-export core provenance utilities for backward compatibility
 from src.core.provenance import (
-    capture_git_provenance,
-    capture_system_info,
-    create_manifest,
     get_code_version,
-    get_content_hash as get_prompt_hash,  # Alias for backward compat
-    save_manifest,
-    track_provenance,
-    validate_reproducibility,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,20 +50,20 @@ class FieldProvenance:
     estimated_cost_usd: float  # Estimated cost for this field
 
     # Re-extraction tracking
-    original_confidence: Optional[float] = None  # If re-extracted, what was original?
-    original_model: Optional[str] = None  # What model produced original?
-    improvement: Optional[float] = None  # Confidence improvement (new - old)
+    original_confidence: float | None = None  # If re-extracted, what was original?
+    original_model: str | None = None  # What model produced original?
+    improvement: float | None = None  # Confidence improvement (new - old)
 
     # Validation provenance
     gbif_validated: bool = False
     gbif_cache_hit: bool = False  # Was GBIF result from cache?
-    gbif_timestamp: Optional[str] = None
+    gbif_timestamp: str | None = None
 
     # Version tracking
-    code_version: Optional[str] = None  # Git commit hash
-    prompt_version: Optional[str] = None  # Prompt template hash
+    code_version: str | None = None  # Git commit hash
+    prompt_version: str | None = None  # Prompt template hash
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {k: v for k, v in asdict(self).items() if v is not None}
 
@@ -95,22 +87,22 @@ class ExtractionProvenance:
     total_estimated_cost_usd: float
 
     # Model usage statistics
-    models_used: List[str] = field(default_factory=list)  # ["apple-vision", "gpt-4o"]
+    models_used: list[str] = field(default_factory=list)  # ["apple-vision", "gpt-4o"]
     api_calls_made: int = 0
     cache_hits: int = 0
 
     # Field-level provenance
-    fields: Dict[str, FieldProvenance] = field(default_factory=dict)
+    fields: dict[str, FieldProvenance] = field(default_factory=dict)
 
     # Validation provenance
-    validation_method: Optional[str] = None  # "gbif_pygbif", "ipni_fallback"
+    validation_method: str | None = None  # "gbif_pygbif", "ipni_fallback"
     validation_cache_hit: bool = False
-    validation_timestamp: Optional[str] = None
+    validation_timestamp: str | None = None
 
     # Environment
-    code_version: Optional[str] = None
-    python_version: Optional[str] = None
-    platform: Optional[str] = None
+    code_version: str | None = None
+    python_version: str | None = None
+    platform: str | None = None
 
     def add_field(
         self,
@@ -131,7 +123,7 @@ class ExtractionProvenance:
             model=model,
             provider=provider,
             extraction_method=extraction_method,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             processing_time_ms=processing_time_ms,
             estimated_cost_usd=estimated_cost_usd,
             code_version=self.code_version,
@@ -165,7 +157,7 @@ class ExtractionProvenance:
             model=new_model,
             provider=new_provider,
             extraction_method="confidence_routing_reextraction",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             processing_time_ms=processing_time_ms,
             estimated_cost_usd=estimated_cost_usd,
             # Track original
@@ -180,17 +172,17 @@ class ExtractionProvenance:
         field_name: str,
         validated: bool,
         cache_hit: bool,
-        timestamp: Optional[str] = None,
+        timestamp: str | None = None,
     ):
         """Add GBIF validation provenance to field."""
         if field_name in self.fields:
             self.fields[field_name].gbif_validated = validated
             self.fields[field_name].gbif_cache_hit = cache_hit
             self.fields[field_name].gbif_timestamp = (
-                timestamp or datetime.now(timezone.utc).isoformat()
+                timestamp or datetime.now(UTC).isoformat()
             )
 
-    def get_summary(self) -> Dict:
+    def get_summary(self) -> dict:
         """Get extraction summary statistics."""
         field_count = len(self.fields)
         re_extracted_count = sum(
@@ -219,7 +211,7 @@ class ExtractionProvenance:
             "api_calls_made": self.api_calls_made,
         }
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
             "specimen_id": self.specimen_id,
@@ -264,7 +256,7 @@ def create_provenance(
     return ExtractionProvenance(
         image_path=image_path,
         specimen_id=specimen_id,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         extraction_strategy=extraction_strategy,
         total_processing_time_ms=0.0,
         total_estimated_cost_usd=0.0,

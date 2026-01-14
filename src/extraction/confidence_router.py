@@ -9,7 +9,6 @@ import base64
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 try:
     from openai import OpenAI
@@ -69,9 +68,9 @@ class ConfidenceRouter:
     def extract_with_routing(
         self,
         image_path: Path,
-        system_prompt: Optional[str] = None,
-        user_prompt: Optional[str] = None,
-    ) -> Tuple[Dict[str, str], Dict[str, float]]:
+        system_prompt: str | None = None,
+        user_prompt: str | None = None,
+    ) -> tuple[dict[str, str], dict[str, float]]:
         """
         Extract Darwin Core fields with confidence-based routing.
 
@@ -145,9 +144,9 @@ class ConfidenceRouter:
         self,
         image_path: Path,
         model: str,
-        system_prompt: Optional[str] = None,
-        user_prompt: Optional[str] = None,
-    ) -> Tuple[Dict[str, str], Dict[str, float]]:
+        system_prompt: str | None = None,
+        user_prompt: str | None = None,
+    ) -> tuple[dict[str, str], dict[str, float]]:
         """Extract Darwin Core fields using specified model."""
         # Default prompts
         if system_prompt is None:
@@ -212,9 +211,9 @@ class ConfidenceRouter:
         self,
         image_path: Path,
         target_fields: list,
-        system_prompt: Optional[str] = None,
-        user_prompt: Optional[str] = None,
-    ) -> Tuple[Dict[str, str], Dict[str, float]]:
+        system_prompt: str | None = None,
+        user_prompt: str | None = None,
+    ) -> tuple[dict[str, str], dict[str, float]]:
         """
         Re-extract specific fields with premium model and focused prompt.
 
@@ -274,7 +273,7 @@ Focus on:
 
 Return JSON with value and confidence for each field."""
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get extraction statistics."""
         total = self.stats["total_extractions"]
         fields_re_extracted = self.stats["fields_re_extracted"]

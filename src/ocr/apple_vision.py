@@ -9,7 +9,6 @@ import logging
 import platform
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class AppleVisionOCR:
 
     def extract_text(
         self, image_path: Path
-    ) -> Tuple[List[Dict[str, any]], Optional[str]]:
+    ) -> tuple[list[dict[str, any]], str | None]:
         """
         Extract text from image using Apple Vision.
 
@@ -85,7 +84,7 @@ class AppleVisionOCR:
             logger.error(f"Apple Vision extraction error: {e}")
             return [], str(e)
 
-    def extract_text_simple(self, image_path: Path) -> Tuple[str, float]:
+    def extract_text_simple(self, image_path: Path) -> tuple[str, float]:
         """
         Extract text from image (simple interface).
 
@@ -169,7 +168,7 @@ do {
 }
 """
 
-    def _parse_output(self, output: str) -> List[Dict[str, any]]:
+    def _parse_output(self, output: str) -> list[dict[str, any]]:
         """Parse Swift script output into structured data."""
         text_blocks = []
 
@@ -198,7 +197,7 @@ do {
 
         return text_blocks
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get OCR statistics."""
         return {
             "available": self.available,

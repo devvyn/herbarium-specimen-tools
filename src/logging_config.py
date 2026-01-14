@@ -5,11 +5,11 @@ Provides JSON-formatted structured logging for production observability.
 Supports both development (human-readable) and production (JSON) modes.
 """
 
+import json
 import logging
 import sys
 from datetime import datetime
-from typing import Any, Dict
-import json
+from typing import Any
 
 
 class JSONFormatter(logging.Formatter):
@@ -26,7 +26,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON string."""
-        log_data: Dict[str, Any] = {
+        log_data: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,

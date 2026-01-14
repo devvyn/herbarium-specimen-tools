@@ -7,7 +7,6 @@ from plain text without AI.
 
 import re
 from datetime import datetime
-from typing import Dict, Optional, Tuple
 
 
 class RulesEngine:
@@ -41,7 +40,7 @@ class RulesEngine:
         """Initialize rules engine."""
         self.stats = {"extractions": 0, "fields_extracted": 0}
 
-    def extract_fields(self, ocr_text: str) -> Tuple[Dict[str, str], Dict[str, float]]:
+    def extract_fields(self, ocr_text: str) -> tuple[dict[str, str], dict[str, float]]:
         """
         Extract Darwin Core fields from OCR text using rules.
 
@@ -90,7 +89,7 @@ class RulesEngine:
         text = re.sub(r"\n+", "\n", text)
         return text.strip()
 
-    def _extract_catalog_number(self, text: str) -> Tuple[str, float]:
+    def _extract_catalog_number(self, text: str) -> tuple[str, float]:
         """Extract catalog/accession number."""
         # Pattern: 3-6 digits, possibly with leading zeros
         patterns = [
@@ -107,7 +106,7 @@ class RulesEngine:
 
         return "", 0.0
 
-    def _extract_scientific_name(self, text: str) -> Tuple[str, float]:
+    def _extract_scientific_name(self, text: str) -> tuple[str, float]:
         """Extract scientific name (genus + species + authority)."""
         # Pattern: Capitalized word + lowercase word(s) + optional authority
         # Example: "Artemisia frigida Willd."
@@ -123,7 +122,7 @@ class RulesEngine:
                 return name, 0.75  # Moderate confidence for pattern match
         return "", 0.0
 
-    def _extract_date(self, text: str) -> Tuple[str, float]:
+    def _extract_date(self, text: str) -> tuple[str, float]:
         """Extract collection date."""
         # Multiple date formats
         patterns = [
@@ -177,7 +176,7 @@ class RulesEngine:
 
         return date_str  # Return original if parsing fails
 
-    def _extract_collector(self, text: str) -> Tuple[str, float]:
+    def _extract_collector(self, text: str) -> tuple[str, float]:
         """Extract collector name."""
         # Patterns for collector names
         patterns = [
@@ -193,20 +192,20 @@ class RulesEngine:
 
         return "", 0.0
 
-    def _extract_country(self, text: str) -> Tuple[str, float]:
+    def _extract_country(self, text: str) -> tuple[str, float]:
         """Extract country."""
         if re.search(r"\bCanada\b", text, re.IGNORECASE):
             return "Canada", 0.95
         return "", 0.0
 
-    def _extract_province(self, text: str) -> Tuple[str, float]:
+    def _extract_province(self, text: str) -> tuple[str, float]:
         """Extract Canadian province."""
         for abbrev, full_name in self.PROVINCES.items():
             if re.search(rf"\b{abbrev}\b", text, re.IGNORECASE):
                 return full_name, 0.90
         return "", 0.0
 
-    def _extract_locality(self, text: str) -> Tuple[str, float]:
+    def _extract_locality(self, text: str) -> tuple[str, float]:
         """Extract locality/location description."""
         # Look for common locality patterns
         patterns = [
@@ -223,21 +222,21 @@ class RulesEngine:
 
         return "", 0.0
 
-    def _extract_institution(self, text: str) -> Tuple[str, float]:
+    def _extract_institution(self, text: str) -> tuple[str, float]:
         """Extract institution code."""
         for code in self.INSTITUTIONS.keys():
             if re.search(rf"\b{code}\b", text, re.IGNORECASE):
                 return code, 0.90
         return "", 0.0
 
-    def _extract_collection(self, text: str) -> Tuple[str, float]:
+    def _extract_collection(self, text: str) -> tuple[str, float]:
         """Extract collection code."""
         # REGINA is common for AAFC
         if re.search(r"\bREGINA\b", text, re.IGNORECASE):
             return "REGINA", 0.90
         return "", 0.0
 
-    def _extract_habitat(self, text: str) -> Tuple[str, float]:
+    def _extract_habitat(self, text: str) -> tuple[str, float]:
         """Extract habitat description."""
         # Look for habitat keywords
         habitat_keywords = [
@@ -260,7 +259,7 @@ class RulesEngine:
 
         return "", 0.0
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get extraction statistics."""
         avg_fields = (
             self.stats["fields_extracted"] / self.stats["extractions"]

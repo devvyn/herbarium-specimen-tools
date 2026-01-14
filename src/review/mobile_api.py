@@ -18,18 +18,17 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, List
 
-from fastapi import FastAPI, HTTPException, Depends, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
-import jwt
+from pydantic import BaseModel
 
-from .engine import ReviewEngine, ReviewStatus, ReviewPriority
+from .engine import ReviewEngine, ReviewPriority, ReviewStatus
 from .validators import GBIFValidator
 
 logger = logging.getLogger(__name__)
@@ -78,26 +77,26 @@ class FieldCorrectionRequest(BaseModel):
 
 
 class UpdateSpecimenRequest(BaseModel):
-    corrections: Optional[dict] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    flagged: Optional[bool] = None
-    notes: Optional[str] = None
+    corrections: dict | None = None
+    status: str | None = None
+    priority: str | None = None
+    flagged: bool | None = None
+    notes: str | None = None
 
 
 class BatchDownloadRequest(BaseModel):
-    status: Optional[str] = "PENDING"
-    priority: Optional[str] = None
+    status: str | None = "PENDING"
+    priority: str | None = None
     limit: int = 50
 
 
 class SpecimenSyncUpdate(BaseModel):
     specimen_id: str
-    corrections: Optional[dict] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    flagged: Optional[bool] = None
-    notes: Optional[str] = None
+    corrections: dict | None = None
+    status: str | None = None
+    priority: str | None = None
+    flagged: bool | None = None
+    notes: str | None = None
     client_timestamp: str
 
 
@@ -116,7 +115,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Create JWT access token."""
     to_encode = data.copy()
     if expires_delta:
@@ -162,7 +161,7 @@ def create_mobile_app(
     extraction_dir: Path,
     image_dir: Path,
     enable_gbif: bool = True,
-    users: Optional[dict] = None,
+    users: dict | None = None,
 ) -> FastAPI:
     """
     Create mobile-optimized FastAPI application.
@@ -355,8 +354,8 @@ def create_mobile_app(
 
     @app.get("/api/v1/queue")
     async def get_queue(
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
         flagged_only: bool = False,
         limit: int = 50,
         offset: int = 0,
@@ -590,7 +589,7 @@ def create_mobile_app(
     @app.post("/api/v1/specimen/{specimen_id}/reject")
     async def reject_specimen(
         specimen_id: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
         username: str = Depends(verify_token)
     ):
         """Quick reject specimen (mobile shortcut)."""
@@ -605,7 +604,7 @@ def create_mobile_app(
     @app.post("/api/v1/specimen/{specimen_id}/flag")
     async def flag_specimen(
         specimen_id: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
         username: str = Depends(verify_token)
     ):
         """Flag specimen for expert attention (mobile shortcut)."""
@@ -696,7 +695,7 @@ def create_mobile_app(
 
     @app.post("/api/v1/sync/upload")
     async def upload_batch(
-        updates: List[SpecimenSyncUpdate],
+        updates: list[SpecimenSyncUpdate],
         username: str = Depends(verify_token)
     ):
         """
@@ -768,8 +767,9 @@ def create_mobile_app(
 
 
 if __name__ == "__main__":
-    import uvicorn
     from pathlib import Path
+
+    import uvicorn
 
     # Example usage with generic paths
     extraction_dir = Path("./examples/sample_data")

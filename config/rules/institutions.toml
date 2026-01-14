@@ -1,0 +1,6 @@
+# Institution normalization rules
+# Map legacy codes or names to canonical institution codes.
+# Add your institution mappings here.
+
+# Example:
+# "Legacy Name" = "CANONICAL-CODE"
