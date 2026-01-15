@@ -5,21 +5,22 @@ Verifies that engine adapters properly implement the OCREngine
 and FieldExtractor protocols.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from src.core.protocols import (
-    OCREngine,
-    FieldExtractor,
-    OCRResult,
-    ExtractionResult,
-)
+import pytest
+
 from src.core.engines import (
     AppleVisionAdapter,
-    RulesEngineAdapter,
     EngineRegistry,
+    RulesEngineAdapter,
     get_engine_registry,
+)
+from src.core.protocols import (
+    ExtractionResult,
+    FieldExtractor,
+    OCREngine,
+    OCRResult,
 )
 
 

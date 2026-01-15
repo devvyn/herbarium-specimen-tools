@@ -11,12 +11,9 @@ Uses FastAPI TestClient and simulates the full persistence cycle.
 """
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 
 # Sample extraction data for testing
 SAMPLE_RECORDS = [

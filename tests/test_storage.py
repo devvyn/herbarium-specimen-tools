@@ -5,12 +5,11 @@ Tests both JSONStorage and SQLiteStorage implementations.
 """
 
 import json
+
 import pytest
-from pathlib import Path
 
 from src.core.protocols import SpecimenData
 from src.core.storage import JSONStorage, SQLiteStorage, create_storage
-
 
 # Sample test data
 SAMPLE_SPECIMEN = SpecimenData(

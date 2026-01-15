@@ -18,7 +18,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from src.review.mobile_api import create_mobile_app, get_password_hash
+from src.review.mobile_api import create_mobile_app
 
 
 @pytest.fixture
@@ -81,13 +81,7 @@ def sample_data_dir(tmp_path):
 
 
 @pytest.fixture
-def test_users():
-    """Create test users with hashed passwords."""
-    return {"testuser": get_password_hash("testpass123")}
-
-
-@pytest.fixture
-def app(sample_data_dir, test_users):
+def app(sample_data_dir):
     """Create FastAPI app for testing."""
     data_dir, images_dir = sample_data_dir
 
@@ -95,7 +89,6 @@ def app(sample_data_dir, test_users):
         extraction_dir=data_dir,
         image_dir=images_dir,
         enable_gbif=False,  # Disable GBIF for faster tests
-        users=test_users,
     )
 
 
@@ -110,7 +103,7 @@ def auth_token(client):
     """Get authentication token for testing."""
     response = client.post(
         "/api/v1/auth/login",
-        json={"username": "testuser", "password": "testpass123"},
+        json={"username": "testuser"},
     )
     return response.json()["access_token"]
 
@@ -122,13 +115,17 @@ def auth_headers(auth_token):
 
 
 class TestAuthentication:
-    """Tests for authentication endpoints."""
+    """Tests for authentication endpoints.
+
+    Note: This app uses username-only auth (no password) with network trust model.
+    Designed for local network and Tailscale deployments.
+    """
 
     def test_login_success(self, client):
-        """Test successful login."""
+        """Test successful login with username."""
         response = client.post(
             "/api/v1/auth/login",
-            json={"username": "testuser", "password": "testpass123"},
+            json={"username": "testuser"},
         )
 
         assert response.status_code == 200
@@ -137,43 +134,35 @@ class TestAuthentication:
         assert data["token_type"] == "bearer"
         assert data["user"]["username"] == "testuser"
 
-    def test_login_wrong_password(self, client):
-        """Test login with wrong password."""
+    def test_login_any_username(self, client):
+        """Test login with any valid username (network trust model)."""
         response = client.post(
             "/api/v1/auth/login",
-            json={"username": "testuser", "password": "wrongpass"},
+            json={"username": "anyuser"},
         )
 
-        assert response.status_code == 401
-        assert "Incorrect username or password" in response.json()["detail"]
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user"]["username"] == "anyuser"
 
-    def test_login_nonexistent_user(self, client):
-        """Test login with nonexistent user."""
+    def test_login_empty_username(self, client):
+        """Test login with empty username fails."""
         response = client.post(
             "/api/v1/auth/login",
-            json={"username": "nonexistent", "password": "password"},
+            json={"username": ""},
         )
 
-        assert response.status_code == 401
-        assert "Incorrect username or password" in response.json()["detail"]
+        assert response.status_code == 400
+        assert "Username required" in response.json()["detail"]
 
-    def test_login_rate_limiting(self, client):
-        """Test rate limiting on login endpoint."""
-        # Make 5 failed attempts (rate limit threshold)
-        for _ in range(5):
-            client.post(
-                "/api/v1/auth/login",
-                json={"username": "testuser", "password": "wrongpass"},
-            )
-
-        # 6th attempt should be rate limited
+    def test_login_missing_username(self, client):
+        """Test login without username field fails."""
         response = client.post(
             "/api/v1/auth/login",
-            json={"username": "testuser", "password": "wrongpass"},
+            json={},
         )
 
-        assert response.status_code == 429
-        assert "Too many login attempts" in response.json()["detail"]
+        assert response.status_code == 422  # Validation error
 
     def test_get_current_user(self, client, auth_headers):
         """Test getting current user info."""
@@ -460,7 +449,7 @@ class TestErrorHandling:
         assert response.status_code == 422  # Validation error
 
     def test_missing_required_fields(self, client):
-        """Test login with missing fields."""
-        response = client.post("/api/v1/auth/login", json={"username": "testuser"})
+        """Test login with missing username field."""
+        response = client.post("/api/v1/auth/login", json={})
 
         assert response.status_code == 422  # Validation error

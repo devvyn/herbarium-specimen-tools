@@ -4,27 +4,20 @@ Tests for event sourcing module.
 Tests event types, EventStore, and EventSourcedStorage wrapper.
 """
 
-import json
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
 
 from src.core.events import (
-    Event,
-    EventType,
-    EventStore,
-    EventSourcedStorage,
-    SpecimenCreated,
-    SpecimenUpdated,
-    SpecimenDeleted,
-    StatusChanged,
-    FieldCorrected,
-    ExtractionCompleted,
-    ValidationCompleted,
-    SpecimenExported,
-    BatchStarted,
-    BatchCompleted,
     EVENT_REGISTRY,
+    Event,
+    EventSourcedStorage,
+    EventStore,
+    EventType,
+    ExtractionCompleted,
+    FieldCorrected,
+    SpecimenCreated,
+    StatusChanged,
 )
 from src.core.protocols import SpecimenData
 
@@ -201,7 +194,7 @@ class TestEventStore:
         event_store.append(new_event)
 
         # Filter since 2025
-        since = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        since = datetime(2025, 1, 1, tzinfo=UTC)
         events = list(event_store.replay(since=since))
 
         assert len(events) == 1

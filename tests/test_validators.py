@@ -13,7 +13,7 @@ Note: These tests use mock responses to avoid hitting GBIF API during testing.
 For integration tests with real GBIF API, see tests/integration/.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -22,21 +22,23 @@ from src.review.validators import GBIFValidator, create_gbif_validator
 
 @pytest.fixture
 def validator():
-    """Create GBIFValidator instance with default settings."""
+    """Create GBIFValidator instance with default settings and caching disabled."""
     return GBIFValidator(
         min_confidence_score=0.80,
         enable_fuzzy_matching=True,
         enable_occurrence_validation=False,
+        enable_cache=False,  # Disable cache so tests use mocked API
     )
 
 
 @pytest.fixture
 def validator_with_occurrence():
-    """Create GBIFValidator instance with occurrence validation enabled."""
+    """Create GBIFValidator instance with occurrence validation enabled and cache disabled."""
     return GBIFValidator(
         min_confidence_score=0.80,
         enable_fuzzy_matching=True,
         enable_occurrence_validation=True,
+        enable_cache=False,  # Disable cache so tests use mocked API
     )
 
 
@@ -73,6 +75,7 @@ class TestVerifyTaxonomy:
         # Mock GBIF response for exact match
         mock_species.name_backbone.return_value = {
             "usageKey": 123456,
+            "acceptedUsageKey": 123456,
             "scientificName": "Artemisia frigida Willd.",
             "canonicalName": "Artemisia frigida",
             "rank": "SPECIES",
@@ -402,6 +405,7 @@ class TestValidatorIntegration:
         # Mock GBIF taxonomy response
         mock_species.name_backbone.return_value = {
             "usageKey": 123456,
+            "acceptedUsageKey": 123456,
             "scientificName": "Artemisia frigida Willd.",
             "canonicalName": "Artemisia frigida",
             "rank": "SPECIES",

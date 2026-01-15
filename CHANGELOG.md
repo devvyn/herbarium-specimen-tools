@@ -7,10 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-15
+
 ### Added
-- Structured logging with JSON format support
-- Request tracking middleware with unique request IDs
-- Enhanced observability features
+- **Device Testing Harness** - Automated UI/UX testing across simulated devices
+  - Tests iPhone 14, iPhone SE, Pixel 7, iPad Mini, Desktop Chrome
+  - Captures screenshots, measures performance, checks accessibility
+  - Generates JSON reports + markdown summaries in `tests/ui/findings/`
+- **Image Scale Controls** - Segmented toolbar for image viewing
+  - "Fit" mode: Scale to fit view
+  - "1:1" mode: Native pixel resolution with scroll/pan
+  - "⛶" Fullscreen mode with iOS pseudo-fullscreen fallback
+- **Dataset Run Documentation** - Metrics from 2,885 specimen processing run
+  - Quality distribution analysis
+  - Priority classification breakdown
+  - Lessons learned documented in `docs/DATASET_RUN_METRICS.md`
+
+### Changed
+- **Simplified Authentication** - Username-only auth with auto-login
+  - Removed password requirement (network trust model for local/Tailscale)
+  - Username saved to localStorage for session persistence
+  - Reduces friction for curator workflows
+- **Unified Server** - Mobile PWA now served from API server
+  - Single port (8080) for both API and frontend
+  - Added `start_review_server.sh` convenience script
+- **Image Viewing UX** - Native mobile gestures
+  - Replaced custom tap-to-zoom with native pinch gestures
+  - Fixed image path resolution for filenames with extensions
+
+### Fixed
+- Image loading 401 errors - removed auth requirement from image endpoints
+- bcrypt compatibility with Python 3.14 - replaced passlib with direct bcrypt
+- Quality score formula - confidence now properly scaled from 0-1 to 0-100
+- JWT error handling - use `jwt.InvalidTokenError` instead of `jwt.JWTError`
+- Test suite stabilization - 52 tests passing
+
+### Security
+- Network trust model: Authentication simplified for local/Tailscale deployments
+- Image endpoints no longer require JWT (appropriate for trusted networks)
 
 ## [0.1.0] - 2025-12-02
 
@@ -103,5 +137,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/devvyn/herbarium-specimen-tools/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/devvyn/herbarium-specimen-tools/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/devvyn/herbarium-specimen-tools/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/devvyn/herbarium-specimen-tools/releases/tag/v0.1.0

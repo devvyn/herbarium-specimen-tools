@@ -32,8 +32,9 @@ Progressive Web App for reviewing specimen extractions on mobile devices.
 - Darwin Core field editing
 - GBIF validation display
 - Priority-based workflow
-- Image viewer with pinch-zoom
-- JWT authentication with rate limiting
+- Image viewer with Fit/1:1/Fullscreen modes
+- Native pinch-zoom with iOS fullscreen fallback
+- Username-only auth (network trust model)
 - Structured logging and request tracking
 
 **Use Cases**:
@@ -90,7 +91,7 @@ After completion, start the server:
 python mobile/run_mobile_server.py --dev
 ```
 
-Then open http://localhost:8000 and use credentials: `testuser` / `testpass123`
+Then open http://localhost:8080 and enter your name to start reviewing.
 
 ### Manual Installation
 
@@ -119,14 +120,15 @@ pip install -e .
 ### Try with Sample Data
 
 ```bash
-# Start mobile review server with included sample data
-python mobile/run_mobile_server.py --dev
+# Start review server with included sample data
+./start_review_server.sh
+
+# Or manually:
+# python mobile/run_mobile_server.py --dev
 
 # Access the mobile interface
-# Open http://localhost:8000 in your browser
-# Default credentials (development only):
-#   Username: testuser
-#   Password: testpass123
+# Open http://localhost:8080 in your browser
+# Enter your name to start reviewing (no password required)
 ```
 
 **Note**: Sample data is included in `examples/sample_data/` but does not include images. The server will start successfully, but image viewing will fail until you add your own specimen images.
@@ -278,5 +280,5 @@ These tools were developed during a herbarium digitization project at a regional
 ---
 
 **Status**: Active Development
-**Version**: 0.1.0 (Initial Release)
+**Version**: 0.2.0
 **Maintained by**: [@devvyn](https://github.com/devvyn)

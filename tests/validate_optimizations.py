@@ -15,12 +15,10 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from extraction import ConfidenceRouter, create_provenance, estimate_extraction_cost
-from extraction.provenance import ExtractionProvenance
+from extraction import ConfidenceRouter, create_provenance
 from ocr import HybridCascadeOCR
 from review.validators import GBIFValidator
 
@@ -97,7 +95,7 @@ class OptimizationValidator:
         # Save results
         self.save_results()
 
-    def test_specimen(self, image_path: Path) -> Dict:
+    def test_specimen(self, image_path: Path) -> dict:
         """
         Test all optimizations on a single specimen.
 
@@ -195,7 +193,7 @@ class OptimizationValidator:
 
         total_time = time.time() - start_time
 
-        print(f"        ✅ Complete provenance recorded")
+        print("        ✅ Complete provenance recorded")
         print(f"  Total time: {total_time:.2f}s")
 
         # Compile results
@@ -295,7 +293,7 @@ class OptimizationValidator:
         if baseline_cost > 0:
             print(f"  Savings:                {(baseline_cost - avg_cost)/baseline_cost*100:.1f}%")
         else:
-            print(f"  Savings:                N/A (no AI calls made)")
+            print("  Savings:                N/A (no AI calls made)")
         print()
 
     def save_results(self):
@@ -314,7 +312,7 @@ class OptimizationValidator:
 
         print(f"✅ Results saved to: {output_file}")
 
-    def _generate_summary(self) -> Dict:
+    def _generate_summary(self) -> dict:
         """Generate summary statistics."""
         if not self.results:
             return {}

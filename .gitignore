@@ -38,8 +38,10 @@ env/
 # Testing
 .pytest_cache/
 .coverage
+.coverage?*
 htmlcov/
 .tox/
+test_output/
 
 # Jupyter
 .ipynb_checkpoints
@@ -80,3 +82,14 @@ mobile/.cache/
 
 # OS
 Thumbs.db
+
+# Runtime data
+review_queue*.json
+test_queue*.json
+.gbif_cache.json
+
+# Claude Code
+.claude/
+
+# Duplicate lock files
+uv\ *.lock

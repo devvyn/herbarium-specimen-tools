@@ -6,12 +6,10 @@ This tests the actual browser behavior to verify review_notes save and load corr
 
 import subprocess
 import time
-import json
 from pathlib import Path
 
 import pytest
 from playwright.sync_api import Page, expect
-
 
 # Test data directory
 PROJECT_ROOT = Path(__file__).parent.parent
