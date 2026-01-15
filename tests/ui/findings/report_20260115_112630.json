@@ -1,0 +1,518 @@
+{
+  "timestamp": "2026-01-15T11:25:36.841764",
+  "base_url": "http://localhost:8080",
+  "devices_tested": [
+    "iphone_14",
+    "iphone_se",
+    "pixel_7",
+    "ipad_mini",
+    "desktop"
+  ],
+  "summary": {
+    "total_tests": 20,
+    "passed": 20,
+    "failed": 0,
+    "pass_rate": "100.0%",
+    "findings": {
+      "critical": 0,
+      "warning": 11,
+      "info": 20
+    }
+  },
+  "results": [
+    {
+      "device": "iphone_14",
+      "flow": "login",
+      "passed": true,
+      "duration_ms": 4965,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_14",
+          "description": "Login flow completed successfully",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_14_login_screen_1768497942.png",
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_14_after_login_1768497944.png"
+      ]
+    },
+    {
+      "device": "iphone_14",
+      "flow": "queue_view",
+      "passed": true,
+      "duration_ms": 1228,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "layout",
+          "device": "iphone_14",
+          "description": "Found 50 specimen cards",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "performance",
+          "device": "iphone_14",
+          "description": "Scroll feels sluggish (103ms)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_14_queue_scrolled_1768497945.png"
+      ]
+    },
+    {
+      "device": "iphone_14",
+      "flow": "specimen_detail",
+      "passed": true,
+      "duration_ms": 4105,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_14",
+          "description": "Image loaded successfully (1068px wide)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "iphone_14",
+          "description": "'Reject' button not visible",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_14_specimen_detail_1768497949.png"
+      ]
+    },
+    {
+      "device": "iphone_14",
+      "flow": "touch_interactions",
+      "passed": true,
+      "duration_ms": 553,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_14",
+          "description": "Touch interaction test completed",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": []
+    },
+    {
+      "device": "iphone_se",
+      "flow": "login",
+      "passed": true,
+      "duration_ms": 3697,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_se",
+          "description": "Login flow completed successfully",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_se_login_screen_1768497952.png",
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_se_after_login_1768497955.png"
+      ]
+    },
+    {
+      "device": "iphone_se",
+      "flow": "queue_view",
+      "passed": true,
+      "duration_ms": 1187,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "layout",
+          "device": "iphone_se",
+          "description": "Found 50 specimen cards",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "performance",
+          "device": "iphone_se",
+          "description": "Scroll feels sluggish (102ms)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_se_queue_scrolled_1768497956.png"
+      ]
+    },
+    {
+      "device": "iphone_se",
+      "flow": "specimen_detail",
+      "passed": true,
+      "duration_ms": 3994,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_se",
+          "description": "Image loaded successfully (1068px wide)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "iphone_se",
+          "description": "'Reject' button not visible",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/iphone_se_specimen_detail_1768497959.png"
+      ]
+    },
+    {
+      "device": "iphone_se",
+      "flow": "touch_interactions",
+      "passed": true,
+      "duration_ms": 534,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "iphone_se",
+          "description": "Touch interaction test completed",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": []
+    },
+    {
+      "device": "pixel_7",
+      "flow": "login",
+      "passed": true,
+      "duration_ms": 4097,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "pixel_7",
+          "description": "Login flow completed successfully",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/pixel_7_login_screen_1768497962.png",
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/pixel_7_after_login_1768497965.png"
+      ]
+    },
+    {
+      "device": "pixel_7",
+      "flow": "queue_view",
+      "passed": true,
+      "duration_ms": 1226,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "layout",
+          "device": "pixel_7",
+          "description": "Found 50 specimen cards",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "performance",
+          "device": "pixel_7",
+          "description": "Scroll feels sluggish (102ms)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/pixel_7_queue_scrolled_1768497966.png"
+      ]
+    },
+    {
+      "device": "pixel_7",
+      "flow": "specimen_detail",
+      "passed": true,
+      "duration_ms": 4315,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "pixel_7",
+          "description": "Image loaded successfully (1068px wide)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "pixel_7",
+          "description": "'Reject' button not visible",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/pixel_7_specimen_detail_1768497969.png"
+      ]
+    },
+    {
+      "device": "pixel_7",
+      "flow": "touch_interactions",
+      "passed": true,
+      "duration_ms": 550,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "pixel_7",
+          "description": "Touch interaction test completed",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": []
+    },
+    {
+      "device": "ipad_mini",
+      "flow": "login",
+      "passed": true,
+      "duration_ms": 3823,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "ipad_mini",
+          "description": "Login flow completed successfully",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/ipad_mini_login_screen_1768497973.png",
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/ipad_mini_after_login_1768497975.png"
+      ]
+    },
+    {
+      "device": "ipad_mini",
+      "flow": "queue_view",
+      "passed": true,
+      "duration_ms": 1243,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "layout",
+          "device": "ipad_mini",
+          "description": "Found 50 specimen cards",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "ipad_mini",
+          "description": "Card width (360px) not utilizing mobile viewport",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": "Cards should be ~90% viewport width on mobile"
+        },
+        {
+          "severity": "warning",
+          "category": "performance",
+          "device": "ipad_mini",
+          "description": "Scroll feels sluggish (103ms)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/ipad_mini_queue_scrolled_1768497976.png"
+      ]
+    },
+    {
+      "device": "ipad_mini",
+      "flow": "specimen_detail",
+      "passed": true,
+      "duration_ms": 4093,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "ipad_mini",
+          "description": "Image loaded successfully (1068px wide)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "ipad_mini",
+          "description": "'Reject' button not visible",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/ipad_mini_specimen_detail_1768497980.png"
+      ]
+    },
+    {
+      "device": "ipad_mini",
+      "flow": "touch_interactions",
+      "passed": true,
+      "duration_ms": 541,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "ipad_mini",
+          "description": "Touch interaction test completed",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": []
+    },
+    {
+      "device": "desktop",
+      "flow": "login",
+      "passed": true,
+      "duration_ms": 3625,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "desktop",
+          "description": "Login flow completed successfully",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/desktop_login_screen_1768497983.png",
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/desktop_after_login_1768497985.png"
+      ]
+    },
+    {
+      "device": "desktop",
+      "flow": "queue_view",
+      "passed": true,
+      "duration_ms": 1176,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "layout",
+          "device": "desktop",
+          "description": "Found 50 specimen cards",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "performance",
+          "device": "desktop",
+          "description": "Scroll feels sluggish (105ms)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/desktop_queue_scrolled_1768497986.png"
+      ]
+    },
+    {
+      "device": "desktop",
+      "flow": "specimen_detail",
+      "passed": true,
+      "duration_ms": 3957,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "desktop",
+          "description": "Image loaded successfully (1068px wide)",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        },
+        {
+          "severity": "warning",
+          "category": "layout",
+          "device": "desktop",
+          "description": "'Reject' button not visible",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": [
+        "/Users/devvynmurphy/Documents/Code/herbarium-specimen-tools/tests/ui/findings/screenshots/desktop_specimen_detail_1768497989.png"
+      ]
+    },
+    {
+      "device": "desktop",
+      "flow": "touch_interactions",
+      "passed": true,
+      "duration_ms": 0,
+      "findings": [
+        {
+          "severity": "info",
+          "category": "interaction",
+          "device": "desktop",
+          "description": "Skipped - desktop device",
+          "screenshot": null,
+          "selector": null,
+          "recommendation": null
+        }
+      ],
+      "screenshots": []
+    }
+  ]
+}
