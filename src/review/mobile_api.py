@@ -24,7 +24,8 @@ import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
@@ -60,7 +61,7 @@ security = HTTPBearer()
 
 class LoginRequest(BaseModel):
     username: str
-    password: str
+    password: str | None = None  # Optional - username-only auth for local use
 
 
 class TokenResponse(BaseModel):
@@ -159,6 +160,7 @@ def create_mobile_app(
     image_dir: Path,
     enable_gbif: bool = True,
     users: dict | None = None,
+    static_dir: Path | None = None,
 ) -> FastAPI:
     """
     Create mobile-optimized FastAPI application.
@@ -266,69 +268,23 @@ def create_mobile_app(
     @app.post("/api/v1/auth/login", response_model=TokenResponse)
     async def login(request: LoginRequest, http_request: Request):
         """
-        Authenticate user and return JWT token.
+        Issue JWT token for username.
 
-        Rate limited to prevent brute force attacks.
+        No password required - username is for audit trail only.
+        Trust is based on network access (local/Tailscale).
         """
-        # Rate limiting (simple implementation)
-        client_ip = http_request.client.host
-        rate_key = f"login:{client_ip}"
-        current_time = datetime.now()
+        username = request.username.strip()
 
-        # Get or initialize rate limit data
-        if rate_key not in app.state.rate_limit_store:
-            app.state.rate_limit_store[rate_key] = {"count": 0, "reset_time": current_time}
-
-        rate_data = app.state.rate_limit_store[rate_key]
-
-        # Reset if time window passed (5 attempts per 15 minutes)
-        if current_time - rate_data["reset_time"] > timedelta(minutes=15):
-            rate_data["count"] = 0
-            rate_data["reset_time"] = current_time
-
-        # Check rate limit
-        if rate_data["count"] >= 5:
-            logger.warning(f"Rate limit exceeded for login from {client_ip}")
+        if not username:
             raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many login attempts. Please try again in 15 minutes.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username required",
             )
-
-        # Increment attempt counter
-        rate_data["count"] += 1
-
-        username = request.username
-        password = request.password
-
-        # Verify user exists and password matches (timing-safe)
-        if username not in app.state.users:
-            # Use a dummy verification to prevent timing attacks
-            # This ensures failed lookups take the same time as password checks
-            try:
-                bcrypt.checkpw(
-                    b"dummy", b"$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.x1qKJqKJqKJqKO"
-                )
-            except Exception:
-                pass
-            logger.warning(f"Failed login attempt for non-existent user: {username}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password"
-            )
-
-        hashed_password = app.state.users[username]
-        if not verify_password(password, hashed_password):
-            logger.warning(f"Failed login attempt for user: {username}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password"
-            )
-
-        # Reset rate limit on successful login
-        rate_data["count"] = 0
 
         # Create access token
         access_token = create_access_token(data={"sub": username})
 
-        logger.info(f"Successful login for user: {username}")
+        logger.info(f"Session started for user: {username}")
 
         return TokenResponse(
             access_token=access_token,
@@ -599,22 +555,27 @@ def create_mobile_app(
     # ========================================================================
 
     @app.get("/api/v1/images/{specimen_id}")
-    async def get_image(specimen_id: str, username: str = Depends(verify_token)):
+    async def get_image(specimen_id: str):
         """
-        Serve specimen image.
+        Serve specimen image (no auth - network trust model).
 
-        Looks for image file with specimen_id as filename (various extensions).
+        Looks for image file with specimen_id as filename.
         """
+        # First try specimen_id as-is (may already have extension)
+        image_path = app.state.image_dir / specimen_id
+        if image_path.exists():
+            return FileResponse(image_path)
+
         # Try common image extensions
-        for ext in [".jpg", ".jpeg", ".png", ".tif", ".tiff"]:
+        for ext in [".jpg", ".jpeg", ".JPG", ".JPEG", ".png", ".PNG", ".tif", ".tiff"]:
             image_path = app.state.image_dir / f"{specimen_id}{ext}"
             if image_path.exists():
                 return FileResponse(image_path)
 
-        raise HTTPException(404, "Image not found")
+        raise HTTPException(404, f"Image not found: {specimen_id}")
 
     @app.get("/api/v1/images/{specimen_id}/thumb")
-    async def get_thumbnail(specimen_id: str, username: str = Depends(verify_token)):
+    async def get_thumbnail(specimen_id: str):
         """
         Serve thumbnail image.
 
@@ -622,7 +583,7 @@ def create_mobile_app(
         For now, returns full image (client-side resize).
         """
         # TODO: Add thumbnail generation
-        return await get_image(specimen_id, username)
+        return await get_image(specimen_id)
 
     # ========================================================================
     # Offline Sync Endpoints
@@ -727,6 +688,35 @@ def create_mobile_app(
             "total_specimens": len(engine.reviews),
             "timestamp": datetime.now().isoformat(),
         }
+
+    # ========================================================================
+    # Static Files (Mobile PWA)
+    # ========================================================================
+
+    if static_dir and static_dir.exists():
+        # Serve static assets (js, css, icons)
+        app.mount("/js", StaticFiles(directory=static_dir / "js"), name="js")
+        app.mount("/css", StaticFiles(directory=static_dir / "css"), name="css")
+        app.mount("/icons", StaticFiles(directory=static_dir / "icons"), name="icons")
+
+        # Serve individual static files
+        @app.get("/manifest.json")
+        async def serve_manifest():
+            return FileResponse(static_dir / "manifest.json")
+
+        @app.get("/sw.js")
+        async def serve_service_worker():
+            return FileResponse(static_dir / "sw.js", media_type="application/javascript")
+
+        # Catch-all route for SPA - must be last
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            # Don't intercept API routes
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404)
+            return FileResponse(static_dir / "index.html")
+
+        logger.info(f"Serving mobile PWA from {static_dir}")
 
     return app
 

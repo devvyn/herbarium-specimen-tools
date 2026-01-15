@@ -84,10 +84,10 @@ class HerbariumAPI {
     /**
      * Authentication
      */
-    async login(username, password) {
+    async login(username) {
         const data = await this.request('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username }),
         });
 
         this.token = data.access_token;

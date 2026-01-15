@@ -7,14 +7,14 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
-            // Authentication (bypassed for local single-user mode)
-            isAuthenticated: true,
+            // Authentication
+            isAuthenticated: false,
             username: '',
             password: '',
             loginError: '',
 
             // UI State
-            loading: true,
+            loading: false,
             currentView: 'queue',
             showStats: false,
             imageZoomed: false,
@@ -70,8 +70,18 @@ createApp({
     },
 
     async mounted() {
-        // Local single-user mode: load data directly (no auth required)
-        await this.initialize();
+        // Check for existing session or saved username
+        const token = localStorage.getItem('auth_token');
+        const savedUsername = localStorage.getItem('herbarium_username');
+
+        if (token) {
+            this.isAuthenticated = true;
+            await this.initialize();
+        } else if (savedUsername) {
+            // Auto-login with saved username
+            this.username = savedUsername;
+            await this.login();
+        }
 
         // Add keyboard shortcuts
         this.setupKeyboardShortcuts();
@@ -180,7 +190,9 @@ createApp({
         async login() {
             try {
                 this.loginError = '';
-                await herbariumAPI.login(this.username, this.password);
+                await herbariumAPI.login(this.username);
+                // Save username for auto-login next time
+                localStorage.setItem('herbarium_username', this.username);
                 this.isAuthenticated = true;
                 await this.initialize();
             } catch (error) {
