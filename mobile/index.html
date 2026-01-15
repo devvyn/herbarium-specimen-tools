@@ -352,10 +352,19 @@
                     <div class="image-toolbar">
                         <button
                             class="scale-toggle"
-                            @click="toggleImageScale"
-                        >
-                            {{ imageScale === 'fit' ? 'View 1:1' : 'Fit to screen' }}
-                        </button>
+                            :class="{ active: imageScale === 'fit' }"
+                            @click="setImageScale('fit')"
+                        >Fit</button>
+                        <button
+                            class="scale-toggle"
+                            :class="{ active: imageScale === 'actual' }"
+                            @click="setImageScale('actual')"
+                        >1:1</button>
+                        <button
+                            class="scale-toggle"
+                            @click="enterFullscreen"
+                            title="View image fullscreen"
+                        >⛶</button>
                     </div>
 
                     <!-- Quick Actions -->

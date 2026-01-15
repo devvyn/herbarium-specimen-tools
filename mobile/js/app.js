@@ -390,8 +390,17 @@ createApp({
         /**
          * Image Viewer
          */
-        toggleImageScale() {
-            this.imageScale = this.imageScale === 'fit' ? 'actual' : 'fit';
+        setImageScale(scale) {
+            this.imageScale = scale;
+        },
+
+        enterFullscreen() {
+            const img = this.$refs.specimenImage;
+            if (img && img.requestFullscreen) {
+                img.requestFullscreen();
+            } else if (img && img.webkitRequestFullscreen) {
+                img.webkitRequestFullscreen(); // Safari
+            }
         },
 
         getImageUrl(specimenId) {

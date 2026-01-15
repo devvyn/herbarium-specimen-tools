@@ -422,6 +422,7 @@ body {
 .image-toolbar {
     display: flex;
     justify-content: center;
+    gap: 2px;
     padding: var(--spacing-xs) var(--spacing-sm);
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
@@ -432,14 +433,37 @@ body {
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
     padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--border-radius);
     font-size: var(--font-size-sm);
     cursor: pointer;
     min-height: 36px;
+    min-width: 44px;
+}
+
+/* Button group styling */
+.scale-toggle:first-child {
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.scale-toggle:last-child {
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.scale-toggle:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+
+.scale-toggle:not(:first-child) {
+    border-left: none;
+}
+
+.scale-toggle.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
 }
 
 .scale-toggle:active {
-    background: var(--bg-secondary);
+    opacity: 0.8;
 }
 
 /* OCR Regions Overlay - must match image dimensions exactly */
