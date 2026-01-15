@@ -346,12 +346,15 @@
                             @click="closeRegionMenu"
                         ></div>
 
+                    </div>
+
+                    <!-- Image Toolbar -->
+                    <div class="image-toolbar">
                         <button
-                            class="scale-indicator"
+                            class="scale-toggle"
                             @click="toggleImageScale"
-                            :title="imageScale === 'fit' ? 'View at actual size' : 'Fit to screen'"
                         >
-                            {{ imageScale === 'fit' ? 'Fit' : '1:1' }}
+                            {{ imageScale === 'fit' ? 'View 1:1' : 'Fit to screen' }}
                         </button>
                     </div>
 

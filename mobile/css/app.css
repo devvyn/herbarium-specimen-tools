@@ -418,28 +418,28 @@ body {
     max-width: none;
 }
 
-/* Scale indicator button */
-.scale-indicator {
-    position: absolute;
-    bottom: var(--spacing-sm);
-    right: var(--spacing-sm);
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-    min-width: 44px;
-    min-height: 44px;
+/* Image toolbar - fixed position below image */
+.image-toolbar {
     display: flex;
-    align-items: center;
     justify-content: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
 }
 
-.scale-indicator:active {
-    background: rgba(0, 0, 0, 0.8);
+.scale-toggle {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    min-height: 36px;
+}
+
+.scale-toggle:active {
+    background: var(--bg-secondary);
 }
 
 /* OCR Regions Overlay - must match image dimensions exactly */
