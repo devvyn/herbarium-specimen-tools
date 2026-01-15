@@ -18,6 +18,7 @@ createApp({
             currentView: 'queue',
             showStats: false,
             imageScale: 'fit',  // 'fit' = fit to screen, 'actual' = 1:1 pixels
+            pseudoFullscreen: false,  // iOS fallback for fullscreen
             actionLoading: false,
 
             // OCR Overlay State
@@ -395,12 +396,26 @@ createApp({
         },
 
         enterFullscreen() {
-            const img = this.$refs.specimenImage;
-            if (img && img.requestFullscreen) {
-                img.requestFullscreen();
-            } else if (img && img.webkitRequestFullscreen) {
-                img.webkitRequestFullscreen(); // Safari
+            const container = this.$refs.imageContainer;
+
+            // Try native fullscreen first (works on desktop)
+            if (container && container.requestFullscreen) {
+                container.requestFullscreen();
+                return;
             }
+            if (container && container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+                return;
+            }
+
+            // Fallback for iOS: pseudo-fullscreen mode
+            this.pseudoFullscreen = true;
+            document.body.style.overflow = 'hidden';
+        },
+
+        exitPseudoFullscreen() {
+            this.pseudoFullscreen = false;
+            document.body.style.overflow = '';
         },
 
         getImageUrl(specimenId) {

@@ -567,6 +567,15 @@
             </div>
         </div>
 
+        <!-- Pseudo-fullscreen overlay (iOS fallback) -->
+        <div v-if="pseudoFullscreen" class="pseudo-fullscreen" @click="exitPseudoFullscreen">
+            <img
+                :src="currentSpecimen ? getImageUrl(currentSpecimen.id) : ''"
+                class="fullscreen-image"
+            >
+            <button class="fullscreen-close" @click.stop="exitPseudoFullscreen">✕</button>
+        </div>
+
         <!-- Toast Notifications -->
         <div v-if="toast.show" class="toast" :class="toast.type">
             <span>{{ toast.message }}</span>
