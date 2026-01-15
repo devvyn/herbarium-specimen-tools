@@ -17,7 +17,7 @@ createApp({
             loading: false,
             currentView: 'queue',
             showStats: false,
-            imageZoomed: false,
+            // imageZoomed removed - using native pinch-to-zoom
             actionLoading: false,
 
             // OCR Overlay State
@@ -258,7 +258,6 @@ createApp({
                 }
 
                 this.currentView = 'specimen';
-                this.imageZoomed = false;
                 this.imageLoaded = false;  // Reset for new image
 
                 // Reset OCR overlay state for new specimen
@@ -388,12 +387,8 @@ createApp({
         },
 
         /**
-         * Image Viewer
+         * Image Viewer (native pinch-to-zoom)
          */
-        toggleImageZoom() {
-            this.imageZoomed = !this.imageZoomed;
-        },
-
         getImageUrl(specimenId) {
             return herbariumAPI.getImageUrl(specimenId);
         },

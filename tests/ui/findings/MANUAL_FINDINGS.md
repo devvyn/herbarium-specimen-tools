@@ -4,27 +4,24 @@ User-reported issues discovered during real device testing.
 
 ## 2026-01-15
 
-### Zoom/Pan Interaction Issue
+### ~~Zoom/Pan Interaction Issue~~ RESOLVED
 
 **Severity**: Warning
 **Category**: Interaction
 **Device**: iPhone (physical)
 **Reporter**: Devvyn
+**Status**: FIXED (2026-01-15)
 
 **Description**:
 User cannot pan to view different parts of the image while zoomed in via the "Tap to zoom" feature. The zoomed view is static/centered.
 
-**Workaround**:
-Native device affordances (two-finger pinch-to-zoom) work correctly and allow panning.
+**Resolution**:
+Removed custom tap-to-zoom in favor of native pinch-to-zoom gestures:
+- Deleted `toggleImageZoom()` method and `imageZoomed` state
+- Changed hint from "Tap to zoom" to "Pinch to zoom"
+- Added `touch-action: manipulation` CSS for optimal touch handling
 
-**Recommendation**:
-Either:
-1. Implement touch-drag panning when zoomed in via tap
-2. Remove custom "tap to zoom" and rely on native gestures
-3. Add visual hint that pinch-to-zoom is preferred
-
-**Technical Notes**:
-The tap-to-zoom likely uses CSS transform scale without implementing touch move handlers for pan offset. Native gestures bypass this by operating at the browser/OS level.
+Native pinch-to-zoom handles both zoom and pan correctly on all mobile devices.
 
 ---
 

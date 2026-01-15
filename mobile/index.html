@@ -191,9 +191,7 @@
                             :src="getImageUrl(currentSpecimen.id)"
                             :alt="currentSpecimen.id"
                             class="specimen-image"
-                            @click="toggleImageZoom"
                             @load="onImageLoad"
-                            :class="{ 'zoomed': imageZoomed }"
                             ref="specimenImage"
                         >
 
@@ -347,7 +345,7 @@
                             @click="closeRegionMenu"
                         ></div>
 
-                        <div class="image-hint">Tap to zoom</div>
+                        <div class="image-hint">Pinch to zoom</div>
                     </div>
 
                     <!-- Quick Actions -->

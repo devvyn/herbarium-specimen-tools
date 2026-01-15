@@ -403,12 +403,8 @@ body {
     width: 100%;
     height: auto;
     display: block;
-    transition: transform 0.3s ease;
-}
-
-.specimen-image.zoomed {
-    transform: scale(2);
-    cursor: zoom-out;
+    /* Native pinch-to-zoom handles zoom+pan better than custom */
+    touch-action: manipulation;
 }
 
 .image-hint {
