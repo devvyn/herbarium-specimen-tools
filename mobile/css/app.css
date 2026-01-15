@@ -403,20 +403,43 @@ body {
     width: 100%;
     height: auto;
     display: block;
-    /* Native pinch-to-zoom handles zoom+pan better than custom */
     touch-action: manipulation;
 }
 
-.image-hint {
+/* 1:1 actual size mode - image at native resolution, container scrollable */
+.image-container.scale-actual {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 70vh;
+}
+
+.specimen-image.actual-size {
+    width: auto;
+    max-width: none;
+}
+
+/* Scale indicator button */
+.scale-indicator {
     position: absolute;
     bottom: var(--spacing-sm);
     right: var(--spacing-sm);
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.6);
     color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--border-radius);
     font-size: var(--font-size-sm);
-    pointer-events: none;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scale-indicator:active {
+    background: rgba(0, 0, 0, 0.8);
 }
 
 /* OCR Regions Overlay - must match image dimensions exactly */

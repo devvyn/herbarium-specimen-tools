@@ -186,11 +186,12 @@
             <div v-else-if="currentView === 'specimen'" class="specimen-view">
                 <div v-if="currentSpecimen" class="specimen-detail">
                     <!-- Image Viewer -->
-                    <div class="image-container" :class="{ loading: !imageLoaded, loaded: imageLoaded }" ref="imageContainer">
+                    <div class="image-container" :class="{ loading: !imageLoaded, loaded: imageLoaded, 'scale-actual': imageScale === 'actual' }" ref="imageContainer">
                         <img
                             :src="getImageUrl(currentSpecimen.id)"
                             :alt="currentSpecimen.id"
                             class="specimen-image"
+                            :class="{ 'actual-size': imageScale === 'actual' }"
                             @load="onImageLoad"
                             ref="specimenImage"
                         >
@@ -345,7 +346,13 @@
                             @click="closeRegionMenu"
                         ></div>
 
-                        <div class="image-hint">Pinch to zoom</div>
+                        <button
+                            class="scale-indicator"
+                            @click="toggleImageScale"
+                            :title="imageScale === 'fit' ? 'View at actual size' : 'Fit to screen'"
+                        >
+                            {{ imageScale === 'fit' ? 'Fit' : '1:1' }}
+                        </button>
                     </div>
 
                     <!-- Quick Actions -->

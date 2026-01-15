@@ -17,7 +17,7 @@ createApp({
             loading: false,
             currentView: 'queue',
             showStats: false,
-            // imageZoomed removed - using native pinch-to-zoom
+            imageScale: 'fit',  // 'fit' = fit to screen, 'actual' = 1:1 pixels
             actionLoading: false,
 
             // OCR Overlay State
@@ -259,6 +259,7 @@ createApp({
 
                 this.currentView = 'specimen';
                 this.imageLoaded = false;  // Reset for new image
+                this.imageScale = 'fit';   // Reset to fit view
 
                 // Reset OCR overlay state for new specimen
                 this.showOcrRegions = false;
@@ -387,8 +388,12 @@ createApp({
         },
 
         /**
-         * Image Viewer (native pinch-to-zoom)
+         * Image Viewer
          */
+        toggleImageScale() {
+            this.imageScale = this.imageScale === 'fit' ? 'actual' : 'fit';
+        },
+
         getImageUrl(specimenId) {
             return herbariumAPI.getImageUrl(specimenId);
         },
