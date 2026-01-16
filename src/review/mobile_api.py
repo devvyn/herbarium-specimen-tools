@@ -13,20 +13,22 @@ Features:
 - Offline sync support
 """
 
+import json
 import logging
 import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import bcrypt
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .engine import ReviewEngine, ReviewPriority, ReviewStatus
@@ -98,6 +100,24 @@ class SpecimenSyncUpdate(BaseModel):
     flagged: bool | None = None
     notes: str | None = None
     client_timestamp: str
+
+
+class AnnotationBounds(BaseModel):
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class ManualAnnotationRequest(BaseModel):
+    """Manual region annotation for training feedback."""
+
+    bounds: AnnotationBounds
+    field_name: str | None = None
+    correct_value: str | None = None
+    request_reextraction: bool = False
+    annotated_by: str | None = None
+    annotated_at: str | None = None
 
 
 # ============================================================================
@@ -549,6 +569,44 @@ def create_mobile_app(
             specimen_id=specimen_id, flagged=True, reviewed_by=username, notes=notes
         )
         return {"status": "flagged", "specimen_id": specimen_id}
+
+    @app.post("/api/v1/specimen/{specimen_id}/annotation")
+    async def save_manual_annotation(
+        specimen_id: str,
+        annotation: ManualAnnotationRequest,
+        username: str = Depends(verify_token),
+    ):
+        """
+        Save manual region annotation for training feedback.
+
+        Allows users to draw regions on images that were missed by OCR
+        and specify what DwC field they correspond to.
+        """
+        # Verify specimen exists
+        review = engine.get_review(specimen_id)
+        if not review:
+            raise HTTPException(404, "Specimen not found")
+
+        annotation_id = str(uuid4())
+        annotation_data = {
+            "annotation_id": annotation_id,
+            "specimen_id": specimen_id,
+            "bounds": annotation.bounds.model_dump(),
+            "field_name": annotation.field_name,
+            "correct_value": annotation.correct_value,
+            "request_reextraction": annotation.request_reextraction,
+            "annotated_by": username,
+            "annotated_at": datetime.utcnow().isoformat(),
+        }
+
+        # Append to annotations JSONL file
+        annotations_file = app.state.extraction_dir / "manual_annotations.jsonl"
+        with open(annotations_file, "a") as f:
+            f.write(json.dumps(annotation_data) + "\n")
+
+        logger.info(f"Manual annotation saved: {annotation_id} for {specimen_id} by {username}")
+
+        return {"status": "saved", "annotation_id": annotation_id}
 
     # ========================================================================
     # Image Serving Endpoints

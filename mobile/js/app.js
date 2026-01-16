@@ -4,6 +4,33 @@
 
 const { createApp } = Vue;
 
+/**
+ * DwC field to expected zone mapping for auto-highlighting
+ * Based on typical herbarium label layouts
+ */
+const DWC_ZONE_HINTS = {
+    typeStatus: { vertical: 'top', horizontal: 'center' },
+    scientificName: { vertical: 'middle', horizontal: 'center' },
+    scientificNameAuthorship: { vertical: 'middle', horizontal: 'center' },
+    recordedBy: { vertical: 'middle', horizontal: 'left' },
+    recordNumber: { vertical: 'middle', horizontal: 'left' },
+    eventDate: { vertical: 'middle', horizontal: 'right' },
+    verbatimEventDate: { vertical: 'middle', horizontal: 'right' },
+    country: { vertical: 'bottom', horizontal: 'left' },
+    stateProvince: { vertical: 'bottom', horizontal: 'left' },
+    county: { vertical: 'bottom', horizontal: 'left' },
+    locality: { vertical: 'bottom', horizontal: 'center' },
+    verbatimLocality: { vertical: 'bottom', horizontal: 'center' },
+    habitat: { vertical: 'bottom', horizontal: 'center' },
+    catalogNumber: { vertical: 'bottom', horizontal: 'right' },
+    occurrenceRemarks: { vertical: 'bottom', horizontal: 'center' },
+    identifiedBy: { vertical: 'top', horizontal: 'right' },
+    dateIdentified: { vertical: 'top', horizontal: 'right' },
+    decimalLatitude: { vertical: 'bottom', horizontal: 'right' },
+    decimalLongitude: { vertical: 'bottom', horizontal: 'right' },
+    minimumElevationInMeters: { vertical: 'bottom', horizontal: 'right' },
+};
+
 createApp({
     data() {
         return {
@@ -40,6 +67,22 @@ createApp({
             selectedRegion: null,
             regionMenuX: 0,
             regionMenuY: 0,
+
+            // Field-to-Region Highlighting
+            highlightedFieldName: null,
+            highlightedRegionIndices: [],
+
+            // Manual Zone Annotation (Drawing Mode)
+            drawingMode: false,
+            drawingStart: null,
+            drawingCurrent: null,
+            drawnRegion: null,
+            showFieldAssignmentModal: false,
+            pendingAnnotation: {
+                fieldName: '',
+                correctValue: '',
+                requestReextraction: false,
+            },
 
             // Data
             queue: [],
@@ -139,6 +182,19 @@ createApp({
          */
         pendingReextractionCount() {
             return this.currentSpecimen?.review?.reextraction_regions?.length || 0;
+        },
+
+        /**
+         * Drawing preview bounds for SVG rectangle
+         */
+        drawingPreviewBounds() {
+            if (!this.drawingStart || !this.drawingCurrent) return null;
+            return {
+                x: Math.min(this.drawingStart.x, this.drawingCurrent.x),
+                y: Math.min(this.drawingStart.y, this.drawingCurrent.y),
+                width: Math.abs(this.drawingCurrent.x - this.drawingStart.x),
+                height: Math.abs(this.drawingCurrent.y - this.drawingStart.y),
+            };
         },
 
         /**
@@ -554,6 +610,260 @@ createApp({
             } else {
                 this.showToast('No matching OCR region found', 'warning');
             }
+        },
+
+        /**
+         * Find OCR regions that match a field using zone hints and text similarity
+         */
+        findRegionsForField(fieldName, fieldValue) {
+            if (!this.currentSpecimen?.ocr_regions || !fieldValue) return [];
+
+            const regions = this.currentSpecimen.ocr_regions;
+            const zoneHint = DWC_ZONE_HINTS[fieldName];
+            const normalizedValue = fieldValue.toLowerCase().trim();
+
+            // Score each region
+            const scored = regions.map((region, index) => {
+                let score = 0;
+
+                // Zone match bonus (0-40 points)
+                if (zoneHint && region.zone) {
+                    if (region.zone.vertical === zoneHint.vertical) score += 20;
+                    if (region.zone.horizontal === zoneHint.horizontal) score += 20;
+                }
+
+                // Text similarity (0-60 points)
+                const regionText = region.text.toLowerCase().trim();
+                if (regionText.includes(normalizedValue) || normalizedValue.includes(regionText)) {
+                    score += 60;
+                } else {
+                    // Fuzzy: check word overlap
+                    const fieldWords = normalizedValue.split(/\s+/).filter(w => w.length > 2);
+                    const regionWords = regionText.split(/\s+/).filter(w => w.length > 2);
+                    const overlap = fieldWords.filter(w =>
+                        regionWords.some(r => r.includes(w) || w.includes(r))
+                    );
+                    score += Math.min(40, overlap.length * 15);
+                }
+
+                return { index, region, score };
+            });
+
+            // Return regions with score > threshold, sorted by score
+            return scored.filter(s => s.score >= 30).sort((a, b) => b.score - a.score);
+        },
+
+        /**
+         * Handle field click/focus - highlight matching OCR region(s)
+         */
+        onFieldFocus(fieldName, fieldData) {
+            // Get field value (corrected or original)
+            const value = fieldData.corrected_value || fieldData.value;
+
+            // Set focused field
+            this.highlightedFieldName = fieldName;
+
+            // Find matching regions
+            const matches = this.findRegionsForField(fieldName, value);
+
+            if (matches.length > 0) {
+                // Highlight best matches (up to 3)
+                this.highlightedRegionIndices = matches.slice(0, 3).map(m => m.index);
+                this.highlightedRegionIndex = matches[0].index;
+
+                // Ensure OCR overlay is visible
+                this.showOcrRegions = true;
+
+                // Update SVG viewBox if needed
+                this.$nextTick(() => {
+                    this.updateSvgViewBox();
+                });
+
+                // Scroll image into view
+                this.$refs.imageContainer?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // No match found
+                this.highlightedRegionIndices = [];
+                this.highlightedRegionIndex = null;
+            }
+        },
+
+        /**
+         * Clear field focus highlight
+         */
+        clearFieldFocus() {
+            this.highlightedFieldName = null;
+            this.highlightedRegionIndices = [];
+            this.highlightedRegionIndex = null;
+        },
+
+        /**
+         * Manual Zone Annotation - Drawing Mode
+         */
+        toggleDrawingMode() {
+            this.drawingMode = !this.drawingMode;
+            if (this.drawingMode) {
+                this.showOcrRegions = true;
+                this.showToast('Draw a rectangle around missed text', 'info');
+            }
+            this.drawingStart = null;
+            this.drawingCurrent = null;
+            this.drawnRegion = null;
+        },
+
+        onSvgMouseDown(event) {
+            if (!this.drawingMode) return;
+            event.preventDefault();
+
+            const svg = this.$refs.ocrOverlay;
+            const rect = svg.getBoundingClientRect();
+            const scaleX = this.imageWidth / rect.width;
+            const scaleY = this.imageHeight / rect.height;
+
+            this.drawingStart = {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY
+            };
+            this.drawingCurrent = { ...this.drawingStart };
+        },
+
+        onSvgMouseMove(event) {
+            if (!this.drawingMode || !this.drawingStart) return;
+            event.preventDefault();
+
+            const svg = this.$refs.ocrOverlay;
+            const rect = svg.getBoundingClientRect();
+            const scaleX = this.imageWidth / rect.width;
+            const scaleY = this.imageHeight / rect.height;
+
+            this.drawingCurrent = {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY
+            };
+        },
+
+        onSvgMouseUp(event) {
+            if (!this.drawingMode || !this.drawingStart) return;
+            event.preventDefault();
+
+            const bounds = this.drawingPreviewBounds;
+
+            // Minimum size check (20x10 pixels)
+            if (bounds && bounds.width > 20 && bounds.height > 10) {
+                this.drawnRegion = { ...bounds };
+                this.pendingAnnotation = {
+                    fieldName: '',
+                    correctValue: '',
+                    requestReextraction: false,
+                };
+                this.showFieldAssignmentModal = true;
+            }
+
+            this.drawingStart = null;
+            this.drawingCurrent = null;
+            this.drawingMode = false;
+        },
+
+        // Touch equivalents for mobile drawing
+        onSvgTouchStart(event) {
+            if (!this.drawingMode || event.touches.length !== 1) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            this.onSvgMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        },
+
+        onSvgTouchMove(event) {
+            if (!this.drawingMode || !this.drawingStart || event.touches.length !== 1) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            this.onSvgMouseMove({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
+        },
+
+        onSvgTouchEnd(event) {
+            if (!this.drawingMode || !this.drawingStart) return;
+            event.preventDefault();
+            this.onSvgMouseUp({ preventDefault: () => {} });
+        },
+
+        cancelAnnotation() {
+            this.showFieldAssignmentModal = false;
+            this.drawnRegion = null;
+            this.pendingAnnotation = {
+                fieldName: '',
+                correctValue: '',
+                requestReextraction: false,
+            };
+        },
+
+        async saveAnnotation() {
+            if (!this.drawnRegion || !this.pendingAnnotation.fieldName) {
+                this.showToast('Please select a field', 'warning');
+                return;
+            }
+
+            try {
+                const annotation = {
+                    specimen_id: this.currentSpecimen.id,
+                    bounds: {
+                        // Convert to normalized coordinates (Vision Framework bottom-left origin)
+                        x: this.drawnRegion.x / this.imageWidth,
+                        y: 1 - (this.drawnRegion.y + this.drawnRegion.height) / this.imageHeight,
+                        width: this.drawnRegion.width / this.imageWidth,
+                        height: this.drawnRegion.height / this.imageHeight
+                    },
+                    field_name: this.pendingAnnotation.fieldName,
+                    correct_value: this.pendingAnnotation.correctValue || null,
+                    request_reextraction: this.pendingAnnotation.requestReextraction,
+                };
+
+                await herbariumAPI.saveManualAnnotation(annotation);
+
+                // Add to local OCR regions for immediate display
+                if (this.pendingAnnotation.correctValue) {
+                    this.currentSpecimen.ocr_regions.push({
+                        text: this.pendingAnnotation.correctValue,
+                        confidence: 1.0,  // Human-verified
+                        bounds: annotation.bounds,
+                        zone: this.classifyZone(annotation.bounds),
+                        manual: true
+                    });
+                }
+
+                // Update field value if provided
+                if (this.pendingAnnotation.correctValue && this.pendingAnnotation.fieldName) {
+                    const field = this.currentSpecimen.fields[this.pendingAnnotation.fieldName];
+                    if (field) {
+                        field.corrected_value = this.pendingAnnotation.correctValue;
+                        field.human_reviewed = true;
+                    }
+                }
+
+                this.showToast('Annotation saved', 'success');
+                this.cancelAnnotation();
+
+            } catch (error) {
+                this.showToast(`Error saving annotation: ${error.message}`, 'error');
+            }
+        },
+
+        /**
+         * Classify zone from normalized bounds
+         */
+        classifyZone(bounds) {
+            const centerY = bounds.y + bounds.height / 2;
+            const centerX = bounds.x + bounds.width / 2;
+
+            let vertical, horizontal;
+
+            if (centerY > 0.67) vertical = 'top';
+            else if (centerY > 0.33) vertical = 'middle';
+            else vertical = 'bottom';
+
+            if (centerX < 0.33) horizontal = 'left';
+            else if (centerX < 0.67) horizontal = 'center';
+            else horizontal = 'right';
+
+            return { vertical, horizontal };
         },
 
         /**

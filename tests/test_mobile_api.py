@@ -328,6 +328,46 @@ class TestSpecimenEndpoints:
         response = client.get("/api/v1/specimen/TEST-001", headers=auth_headers)
         assert response.json()["specimen"]["review"]["flagged"] is True
 
+    def test_save_manual_annotation(self, client, auth_headers):
+        """Test saving manual region annotation."""
+        annotation_data = {
+            "bounds": {
+                "x": 0.1,
+                "y": 0.2,
+                "width": 0.3,
+                "height": 0.1,
+            },
+            "field_name": "scientificName",
+            "correct_value": "Corrected species name",
+            "request_reextraction": True,
+        }
+
+        response = client.post(
+            "/api/v1/specimen/TEST-001/annotation",
+            json=annotation_data,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "saved"
+        assert "annotation_id" in data
+
+    def test_save_manual_annotation_not_found(self, client, auth_headers):
+        """Test saving annotation for nonexistent specimen."""
+        annotation_data = {
+            "bounds": {"x": 0.1, "y": 0.2, "width": 0.3, "height": 0.1},
+            "field_name": "scientificName",
+        }
+
+        response = client.post(
+            "/api/v1/specimen/NONEXISTENT/annotation",
+            json=annotation_data,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 404
+
 
 class TestImageServing:
     """Tests for image serving endpoints."""

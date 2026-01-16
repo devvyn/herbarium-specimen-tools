@@ -257,11 +257,17 @@
                         <svg
                             v-if="showOcrRegions && hasOcrRegions && imageLoaded"
                             class="ocr-overlay"
-                            :class="{ 'selection-mode': regionSelectionMode }"
+                            :class="{ 'selection-mode': regionSelectionMode, 'drawing-mode': drawingMode }"
                             ref="ocrOverlay"
                             preserveAspectRatio="xMinYMin meet"
                             role="group"
                             :aria-label="'OCR regions overlay with ' + currentSpecimen.ocr_regions.length + ' detected text regions. ' + (regionSelectionMode ? 'Selection mode active. Press Space or Enter to select regions.' : 'Press Tab to navigate between regions.')"
+                            @mousedown="onSvgMouseDown"
+                            @mousemove="onSvgMouseMove"
+                            @mouseup="onSvgMouseUp"
+                            @touchstart="onSvgTouchStart"
+                            @touchmove="onSvgTouchMove"
+                            @touchend="onSvgTouchEnd"
                         >
                             <rect
                                 v-for="(region, index) in currentSpecimen.ocr_regions"
@@ -274,9 +280,10 @@
                                 :class="[
                                     'confidence-' + getConfidenceClass(region.confidence),
                                     {
-                                        highlighted: highlightedRegionIndex === index,
+                                        highlighted: highlightedRegionIndex === index || highlightedRegionIndices.includes(index),
                                         selected: isRegionSelected(index),
-                                        'pending-reextraction': isRegionPendingReextraction(index)
+                                        'pending-reextraction': isRegionPendingReextraction(index),
+                                        manual: region.manual
                                     }
                                 ]"
                                 role="button"
@@ -289,6 +296,26 @@
                                 @mouseleave="hoverRegion = null"
                                 @focus="hoverRegion = region"
                                 @blur="hoverRegion = null"
+                            />
+
+                            <!-- Drawing preview rectangle -->
+                            <rect
+                                v-if="drawingMode && drawingPreviewBounds"
+                                :x="drawingPreviewBounds.x"
+                                :y="drawingPreviewBounds.y"
+                                :width="drawingPreviewBounds.width"
+                                :height="drawingPreviewBounds.height"
+                                class="drawing-preview"
+                            />
+
+                            <!-- Drawn region (pending assignment) -->
+                            <rect
+                                v-if="drawnRegion"
+                                :x="drawnRegion.x"
+                                :y="drawnRegion.y"
+                                :width="drawnRegion.width"
+                                :height="drawnRegion.height"
+                                class="drawn-region"
                             />
                         </svg>
 
@@ -365,6 +392,12 @@
                             @click="enterFullscreen"
                             title="View image fullscreen"
                         >⛶</button>
+                        <button
+                            class="scale-toggle"
+                            :class="{ active: drawingMode }"
+                            @click="toggleDrawingMode"
+                            title="Draw annotation for missed region"
+                        >✏️</button>
                     </div>
 
                     <!-- Quick Actions -->
@@ -466,9 +499,10 @@
                             class="field-item"
                             :class="{
                                 'low-confidence': fieldData.confidence < 0.7,
-                                'ocr-linkable': showOcrRegions && hasOcrRegions
+                                'ocr-linkable': showOcrRegions && hasOcrRegions,
+                                'field-focused': highlightedFieldName === fieldName
                             }"
-                            @click="highlightMatchingRegions(fieldData.value)"
+                            @click="onFieldFocus(fieldName, fieldData)"
                         >
                             <div class="field-header">
                                 <label class="field-label">{{ formatFieldName(fieldName) }}</label>
@@ -563,6 +597,45 @@
                             ⚠️ {{ issue }}
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Field Assignment Modal (for manual annotation) -->
+        <div v-if="showFieldAssignmentModal" class="modal-overlay" @click.self="cancelAnnotation">
+            <div class="modal-content annotation-modal">
+                <h3>Assign Region to Field</h3>
+
+                <div class="form-group">
+                    <label for="annotation-field">Field:</label>
+                    <select id="annotation-field" v-model="pendingAnnotation.fieldName" class="filter-select">
+                        <option value="">Select a field...</option>
+                        <option v-for="(_, name) in currentSpecimen.fields" :key="name" :value="name">
+                            {{ formatFieldName(name) }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="annotation-value">Correct value (optional):</label>
+                    <input
+                        id="annotation-value"
+                        v-model="pendingAnnotation.correctValue"
+                        class="input"
+                        placeholder="Enter the text that should have been extracted"
+                    >
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" v-model="pendingAnnotation.requestReextraction">
+                        Request re-extraction of this region
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button @click="cancelAnnotation" class="btn btn-secondary">Cancel</button>
+                    <button @click="saveAnnotation" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </div>

@@ -247,6 +247,18 @@ class HerbariumAPI {
             body: JSON.stringify(updates),
         });
     }
+
+    /**
+     * Save Manual Annotation
+     *
+     * Saves a manually drawn region annotation for training feedback.
+     */
+    async saveManualAnnotation(annotation) {
+        return this.request(`/specimen/${annotation.specimen_id}/annotation`, {
+            method: 'POST',
+            body: JSON.stringify(annotation),
+        });
+    }
 }
 
 // Export singleton instance

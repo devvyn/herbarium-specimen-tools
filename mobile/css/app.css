@@ -542,6 +542,53 @@ body {
     animation: pulse-highlight 1s ease-in-out 2;
 }
 
+/* Manual annotation regions */
+.ocr-region.manual {
+    stroke: var(--color-success);
+    stroke-width: 3;
+    fill: rgba(16, 185, 129, 0.15);
+}
+
+/* Drawing mode cursor */
+.ocr-overlay.drawing-mode {
+    cursor: crosshair;
+}
+
+/* Drawing preview */
+.drawing-preview {
+    fill: rgba(59, 130, 246, 0.2);
+    stroke: var(--color-primary);
+    stroke-width: 2;
+    stroke-dasharray: 5 3;
+    pointer-events: none;
+}
+
+/* Drawn region pending assignment */
+.drawn-region {
+    fill: rgba(16, 185, 129, 0.2);
+    stroke: var(--color-success);
+    stroke-width: 3;
+    animation: pulse-success 1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes pulse-success {
+    0%, 100% {
+        stroke-width: 3;
+        fill: rgba(16, 185, 129, 0.2);
+    }
+    50% {
+        stroke-width: 5;
+        fill: rgba(16, 185, 129, 0.35);
+    }
+}
+
+/* Field focused state */
+.field-item.field-focused {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid var(--color-primary);
+}
+
 @keyframes pulse-highlight {
     0%, 100% { fill: rgba(59, 130, 246, 0.25); }
     50% { fill: rgba(59, 130, 246, 0.4); }
@@ -1312,6 +1359,76 @@ body {
 .offline-hint {
     font-size: 0.75rem;
     opacity: 0.9;
+}
+
+/* ============================================================================
+   Modal
+   ============================================================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--spacing-md);
+}
+
+.modal-content {
+    background: var(--color-bg);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    max-width: 400px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: var(--font-size-lg);
+    color: var(--color-text);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text-secondary);
+}
+
+.form-group.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+}
+
+.form-group.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.modal-actions .btn {
+    flex: 1;
 }
 
 /* ============================================================================
