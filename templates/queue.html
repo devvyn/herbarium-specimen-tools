@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="header-title">Review Queue</h1>
+            <div class="header-actions">
+                <button hx-get="/partials/stats"
+                        hx-target="#stats-banner"
+                        hx-swap="innerHTML"
+                        class="btn-icon"
+                        aria-label="Refresh statistics">
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Banner -->
+        <div id="stats-banner"
+             hx-get="/partials/stats"
+             hx-trigger="load, every 30s"
+             hx-swap="innerHTML">
+            <div class="stats-banner">Loading stats...</div>
+        </div>
+    </header>
+
+    <!-- Offline Status Banner -->
+    <div id="offline-banner" class="offline-banner" style="display: none;">
+        <span>Offline Mode</span>
+        <span class="offline-hint">Changes will sync when connection is restored</span>
+    </div>
+
+    <!-- Queue View -->
+    <div class="queue-view">
+        <!-- Filters -->
+        <div class="filters"
+             hx-get="/partials/queue"
+             hx-trigger="change from:.filter-select"
+             hx-target="#specimen-cards"
+             hx-swap="innerHTML"
+             hx-include="[name='priority'],[name='status']">
+            <select name="priority" class="filter-select">
+                <option value="">All Priorities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+            </select>
+
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_REVIEW">In Review</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+            </select>
+        </div>
+
+        <!-- Specimen Cards -->
+        <div id="specimen-cards"
+             class="specimen-cards"
+             hx-get="/partials/queue"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading specimens...</div>
+        </div>
+
+        <!-- Load More -->
+        <div id="load-more" style="display: none;">
+            <button hx-get="/partials/queue"
+                    hx-target="#specimen-cards"
+                    hx-swap="beforeend"
+                    hx-include="[name='offset']"
+                    class="btn btn-secondary">
+                Load More
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check online status
+    function updateOnlineStatus() {
+        const banner = document.getElementById('offline-banner');
+        if (navigator.onLine) {
+            banner.style.display = 'none';
+        } else {
+            banner.style.display = 'block';
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-screen">
+    <div class="login-card">
+        <h1>Herbarium Review</h1>
+        <p>Mobile specimen curation</p>
+
+        <form hx-post="/api/v1/auth/login"
+              hx-target="body"
+              hx-swap="innerHTML"
+              hx-ext="json-enc"
+              class="login-form">
+            <label for="login-username" class="sr-only">Username</label>
+            <input
+                id="login-username"
+                name="username"
+                type="text"
+                placeholder="Your name"
+                class="input"
+                autocapitalize="none"
+                required
+            >
+            <button type="submit" class="btn btn-primary">
+                Start Reviewing
+            </button>
+        </form>
+
+        <div id="login-error" class="error-message" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+    // Handle login response
+    document.body.addEventListener('htmx:afterRequest', function(event) {
+        if (event.detail.pathInfo.requestPath === '/api/v1/auth/login') {
+            if (event.detail.successful) {
+                const response = JSON.parse(event.detail.xhr.responseText);
+                localStorage.setItem('herbarium_token', response.access_token);
+                localStorage.setItem('herbarium_user', JSON.stringify(response.user));
+                // Redirect to queue
+                window.location.href = '/queue';
+            } else {
+                document.getElementById('login-error').textContent =
+                    'Login failed. Please try again.';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+    });
+</script>
+{% endblock %}

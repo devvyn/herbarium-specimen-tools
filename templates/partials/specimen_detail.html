@@ -1,0 +1,214 @@
+<!-- Image Viewer -->
+<div class="image-container">
+    <img
+        src="/api/v1/images/{{ specimen.id }}"
+        alt="{{ specimen.id }}"
+        class="specimen-image"
+        loading="lazy"
+    >
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <button
+        hx-post="/api/v1/specimen/{{ specimen.id }}/approve"
+        hx-swap="none"
+        hx-on::after-request="window.location.href='/queue'"
+        class="btn btn-success"
+        aria-label="Approve: Data is correct, ready for export"
+        title="Data is correct, include in DwC export"
+    >
+        Approve
+    </button>
+    <button
+        hx-post="/partials/specimen/{{ specimen.id }}/reextract"
+        hx-target="#reextract-status"
+        hx-swap="innerHTML"
+        class="btn btn-warning"
+        aria-label="Re-extract: Image OK but extraction failed"
+        title="Image is fine, but extraction needs to be re-run"
+    >
+        Re-extract
+    </button>
+    <button
+        hx-post="/api/v1/specimen/{{ specimen.id }}/flag"
+        hx-swap="none"
+        hx-on::after-request="htmx.trigger(document.body, 'refresh-specimen')"
+        class="btn btn-secondary"
+        aria-label="Flag: Need expert review"
+        title="Uncertain, need expert to review"
+    >
+        Flag
+    </button>
+    <button
+        hx-post="/api/v1/specimen/{{ specimen.id }}/reject"
+        hx-swap="none"
+        hx-on::after-request="window.location.href='/queue'"
+        class="btn btn-danger"
+        aria-label="Reject: Unusable, exclude from export"
+        title="Data is unusable, exclude from DwC export"
+    >
+        Reject
+    </button>
+</div>
+<div id="reextract-status"></div>
+
+<!-- Action Guide -->
+<div class="action-guide">
+    <details>
+        <summary>Action guide</summary>
+        <ul>
+            <li><strong>Approve</strong>: Data correct - include in export</li>
+            <li><strong>Re-extract</strong>: Image OK, extraction failed - re-process</li>
+            <li><strong>Flag</strong>: Uncertain - expert review needed</li>
+            <li><strong>Reject</strong>: Unusable - exclude from export</li>
+        </ul>
+    </details>
+</div>
+
+<!-- Priority Control -->
+<div class="priority-control">
+    <label for="priority-select">Priority</label>
+    <select
+        id="priority-select"
+        name="priority"
+        hx-put="/api/v1/specimen/{{ specimen.id }}"
+        hx-ext="json-enc"
+        hx-vals='js:{priority: event.target.value}'
+        hx-swap="none"
+        class="filter-select"
+    >
+        <option value="CRITICAL" {{ 'selected' if specimen.review.priority == 'CRITICAL' }}>Critical</option>
+        <option value="HIGH" {{ 'selected' if specimen.review.priority == 'HIGH' }}>High</option>
+        <option value="MEDIUM" {{ 'selected' if specimen.review.priority == 'MEDIUM' }}>Medium</option>
+        <option value="LOW" {{ 'selected' if specimen.review.priority == 'LOW' }}>Low</option>
+        <option value="MINIMAL" {{ 'selected' if specimen.review.priority == 'MINIMAL' }}>Minimal</option>
+    </select>
+</div>
+
+<!-- Provenance Summary -->
+{% if specimen.metadata %}
+<div class="provenance-summary">
+    <h3>Extraction Info</h3>
+    <div class="provenance-grid">
+        <div class="provenance-item">
+            <span class="provenance-label">Model</span>
+            <span class="provenance-value">{{ specimen.metadata.model or 'Unknown' }}</span>
+        </div>
+        <div class="provenance-item">
+            <span class="provenance-label">Provider</span>
+            <span class="provenance-value">{{ specimen.metadata.provider or 'Unknown' }}</span>
+        </div>
+        {% if specimen.metadata.extraction_timestamp %}
+        <div class="provenance-item">
+            <span class="provenance-label">Extracted</span>
+            <span class="provenance-value">{{ specimen.metadata.extraction_timestamp[:10] }}</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Field Editor -->
+<div class="fields-editor">
+    <h3>Fields</h3>
+
+    {% for field_name, field_data in specimen.fields.items() %}
+    <div class="field-item {{ 'low-confidence' if field_data.confidence < 0.7 }}"
+         id="field-{{ field_name }}">
+        <div class="field-header">
+            <label class="field-label">{{ field_name | replace('_', ' ') | title }}</label>
+            <div class="field-badges">
+                {% if field_data.get('human_reviewed') %}
+                <span class="reviewed-badge" title="Human reviewed">Reviewed</span>
+                {% endif %}
+                <span class="confidence-badge {{ 'high' if field_data.confidence >= 0.9 else ('medium' if field_data.confidence >= 0.7 else 'low') }}">
+                    {{ (field_data.confidence * 100) | round(0) | int }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="field-input-group">
+            <input
+                type="text"
+                name="value"
+                value="{{ field_data.corrected_value or field_data.value or '' }}"
+                placeholder="{{ field_data.value or 'No value' }}"
+                class="input"
+                hx-post="/api/v1/specimen/{{ specimen.id }}/field/{{ field_name }}"
+                hx-ext="json-enc"
+                hx-vals='js:{field: "{{ field_name }}", value: event.target.value, accept_suggestion: false}'
+                hx-trigger="blur changed"
+                hx-swap="none"
+            >
+            {% if field_data.value and not field_data.corrected_value %}
+            <button
+                hx-post="/api/v1/specimen/{{ specimen.id }}/field/{{ field_name }}"
+                hx-ext="json-enc"
+                hx-vals='{"field": "{{ field_name }}", "value": "{{ field_data.value }}", "accept_suggestion": true}'
+                hx-swap="none"
+                hx-on::after-request="this.disabled = true; this.textContent = 'Accepted'"
+                class="btn-sm btn-accept"
+                title="Accept AI suggestion"
+            >
+                Accept
+            </button>
+            {% endif %}
+        </div>
+
+        {% if field_data.value %}
+        <div class="field-hint">
+            AI suggested: {{ field_data.value }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- GBIF Validation -->
+{% if specimen.gbif_validation %}
+<div class="gbif-validation">
+    <h3>GBIF Validation</h3>
+    <div class="validation-item">
+        <span>Taxonomy:</span>
+        <span class="{{ 'success' if specimen.gbif_validation.taxonomy_verified else 'error' }}">
+            {{ 'Verified' if specimen.gbif_validation.taxonomy_verified else 'Issues' }}
+        </span>
+    </div>
+    {% if specimen.gbif_validation.taxonomy_issues %}
+    <div class="issues-list">
+        {% for issue in specimen.gbif_validation.taxonomy_issues %}
+        <p>- {{ issue }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Review Notes -->
+<div class="notes-section">
+    <h3>Review Feedback</h3>
+    <p class="notes-hint">Workflow notes for re-extraction or expert review. Not included in DwC export.</p>
+    <textarea
+        name="review_notes"
+        placeholder="Instructions for re-extraction, questions for expert..."
+        class="textarea"
+        hx-put="/api/v1/specimen/{{ specimen.id }}"
+        hx-ext="json-enc"
+        hx-vals='js:{notes: event.target.value}'
+        hx-trigger="blur changed"
+        hx-swap="none"
+    >{{ specimen.review.notes or '' }}</textarea>
+</div>
+
+<!-- Issues -->
+{% if specimen.issues and specimen.issues.critical %}
+<div class="issues-section">
+    <h3>Critical Issues</h3>
+    {% for issue in specimen.issues.critical %}
+    <div class="issue-item">
+        Warning: {{ issue }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

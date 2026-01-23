@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="header-title">Specimen Details</h1>
+            <div class="header-actions">
+                <a href="/queue" class="btn-icon" aria-label="Back to queue">
+                    Back
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Specimen Detail View -->
+    <div class="specimen-view">
+        <div class="specimen-detail"
+             hx-get="/partials/specimen/{{ specimen_id }}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading specimen...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

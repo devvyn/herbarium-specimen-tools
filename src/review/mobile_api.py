@@ -26,9 +26,10 @@ import jwt
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from .engine import ReviewEngine, ReviewPriority, ReviewStatus
@@ -197,11 +198,15 @@ def create_mobile_app(
     """
     app = FastAPI(
         title="Herbarium Mobile Review API",
-        description="Mobile-optimized API for specimen curation",
-        version="1.0.0",
+        description="Mobile-optimized API for specimen curation with HTMX",
+        version="2.0.0",  # v2: HTMX + Jinja2 templates
         docs_url="/docs" if os.environ.get("ENVIRONMENT") == "development" else None,
         redoc_url="/redoc" if os.environ.get("ENVIRONMENT") == "development" else None,
     )
+
+    # Jinja2 templates for HTMX partials
+    templates_dir = Path(__file__).parent.parent.parent / "templates"
+    templates = Jinja2Templates(directory=str(templates_dir))
 
     # CORS configuration - restrict to specific origins
     allowed_origins = os.environ.get(
@@ -746,6 +751,162 @@ def create_mobile_app(
             "total_specimens": len(engine.reviews),
             "timestamp": datetime.now().isoformat(),
         }
+
+    # ========================================================================
+    # HTMX Template Routes
+    # ========================================================================
+
+    @app.get("/", response_class=HTMLResponse)
+    async def login_page(request: Request):
+        """Serve login page."""
+        return templates.TemplateResponse("login.html", {"request": request})
+
+    @app.get("/queue", response_class=HTMLResponse)
+    async def queue_page(request: Request):
+        """Serve queue page."""
+        return templates.TemplateResponse("queue.html", {"request": request})
+
+    @app.get("/specimen/{specimen_id}", response_class=HTMLResponse)
+    async def specimen_page(request: Request, specimen_id: str):
+        """Serve specimen detail page."""
+        return templates.TemplateResponse(
+            "specimen.html",
+            {"request": request, "specimen_id": specimen_id}
+        )
+
+    # ========================================================================
+    # HTMX Partial Endpoints
+    # ========================================================================
+
+    @app.get("/partials/stats", response_class=HTMLResponse)
+    async def partial_stats(request: Request, username: str = Depends(verify_token)):
+        """Return stats partial for HTMX."""
+        stats = engine.get_statistics()
+        return templates.TemplateResponse(
+            "partials/stats.html",
+            {"request": request, "stats": stats}
+        )
+
+    @app.get("/partials/queue", response_class=HTMLResponse)
+    async def partial_queue(
+        request: Request,
+        status: str | None = None,
+        priority: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        username: str = Depends(verify_token),
+    ):
+        """Return queue partial for HTMX."""
+        # Parse filters
+        status_enum = None
+        if status:
+            try:
+                status_enum = ReviewStatus[status.upper()]
+            except KeyError:
+                pass
+
+        priority_enum = None
+        if priority:
+            try:
+                priority_enum = ReviewPriority[priority.upper()]
+            except KeyError:
+                pass
+
+        # Get filtered queue
+        queue = engine.get_review_queue(
+            status=status_enum,
+            priority=priority_enum,
+            sort_by="priority",
+        )
+
+        total = len(queue)
+        queue = queue[offset : offset + limit]
+
+        specimens = [
+            {
+                "id": review.specimen_id,
+                "priority": review.priority.name,
+                "status": review.status.name,
+                "flagged": review.flagged,
+                "quality_score": round(review.quality_score, 1),
+                "completeness": round(review.completeness_score, 1),
+                "critical_issues": len(review.critical_issues),
+                "scientific_name": review.dwc_fields.get("scientificName", {}).get(
+                    "value", "Unknown"
+                ),
+                "catalog_number": review.dwc_fields.get("catalogNumber", {}).get("value", ""),
+            }
+            for review in queue
+        ]
+
+        return templates.TemplateResponse(
+            "partials/queue.html",
+            {
+                "request": request,
+                "specimens": specimens,
+                "pagination": {
+                    "total": total,
+                    "offset": offset,
+                    "limit": limit,
+                    "has_more": offset + limit < total,
+                },
+            }
+        )
+
+    @app.get("/partials/specimen/{specimen_id}", response_class=HTMLResponse)
+    async def partial_specimen(
+        request: Request,
+        specimen_id: str,
+        username: str = Depends(verify_token),
+    ):
+        """Return specimen detail partial for HTMX."""
+        review = engine.get_review(specimen_id)
+
+        if not review:
+            return HTMLResponse("<div class='error'>Specimen not found</div>", status_code=404)
+
+        # Format fields with suggestion metadata
+        fields = {}
+        for field_name, field_data in review.dwc_fields.items():
+            if isinstance(field_data, dict):
+                fields[field_name] = {
+                    "value": field_data.get("value", ""),
+                    "confidence": field_data.get("confidence", 0.0),
+                    "corrected_value": review.corrections.get(field_name),
+                }
+            else:
+                fields[field_name] = {
+                    "value": field_data,
+                    "confidence": 1.0,
+                }
+
+        specimen = {
+            "id": review.specimen_id,
+            "fields": fields,
+            "metadata": {
+                "extraction_timestamp": review.extraction_timestamp,
+                "model": review.model,
+                "provider": review.provider,
+            },
+            "gbif_validation": {
+                "taxonomy_verified": review.gbif_taxonomy_verified,
+                "taxonomy_issues": review.gbif_taxonomy_issues,
+            },
+            "review": {
+                "status": review.status.name,
+                "priority": review.priority.name,
+                "flagged": review.flagged,
+                "notes": review.notes,
+            },
+            "issues": {
+                "critical": review.critical_issues,
+            },
+        }
+
+        return templates.TemplateResponse(
+            "partials/specimen_detail.html",
+            {"request": request, "specimen": specimen}
+        )
 
     # ========================================================================
     # Static Files (Mobile PWA)

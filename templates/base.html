@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#10b981">
+
+    <title>Herbarium Review</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/app.css">
+
+    <!-- HTMX for declarative server interactions -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.error('Service Worker registration failed', err));
+        }
+
+        // HTMX configuration
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            // Add JWT token to all HTMX requests
+            const token = localStorage.getItem('herbarium_token');
+            if (token) {
+                event.detail.headers['Authorization'] = 'Bearer ' + token;
+            }
+        });
+
+        // Handle 401 responses
+        document.body.addEventListener('htmx:responseError', function(event) {
+            if (event.detail.xhr.status === 401) {
+                localStorage.removeItem('herbarium_token');
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

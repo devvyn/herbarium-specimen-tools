@@ -1,0 +1,46 @@
+{% for specimen in specimens %}
+<div class="specimen-card {{ 'priority-' + specimen.priority | lower }}"
+     hx-get="/specimen/{{ specimen.id }}"
+     hx-target="body"
+     hx-swap="innerHTML"
+     hx-push-url="true">
+    <div class="card-header">
+        <span class="catalog-number">{{ specimen.catalog_number or 'No #' }}</span>
+        <span class="priority-badge {{ specimen.priority | lower }}">
+            {{ specimen.priority }}
+        </span>
+    </div>
+
+    <div class="card-body">
+        <p class="scientific-name">{{ specimen.scientific_name }}</p>
+        <div class="card-metrics">
+            <span class="metric">
+                Quality: {{ specimen.quality_score | round(0) }}%
+            </span>
+            <span class="metric">
+                Complete: {{ specimen.completeness | round(0) }}%
+            </span>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        <span class="status-badge {{ specimen.status | lower }}">
+            {{ specimen.status }}
+        </span>
+        {% if specimen.flagged %}
+        <span class="flag-icon">Flagged</span>
+        {% endif %}
+        {% if specimen.critical_issues > 0 %}
+        <span class="issue-count">
+            {{ specimen.critical_issues }} issues
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="empty-state">No specimens match your filters.</div>
+{% endfor %}
+
+{% if pagination.has_more %}
+<input type="hidden" name="offset" value="{{ pagination.offset + pagination.limit }}">
+{% endif %}

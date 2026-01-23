@@ -1,0 +1,24 @@
+<div class="stats-banner">
+    <div class="stat">
+        <span class="stat-label">Total</span>
+        <span class="stat-value">{{ stats.total_specimens }}</span>
+    </div>
+    <div class="stat">
+        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ stats.status_counts.PENDING | default(0) }}</span>
+    </div>
+    <div class="stat">
+        <span class="stat-label">Approved</span>
+        <span class="stat-value">{{ stats.status_counts.APPROVED | default(0) }}</span>
+    </div>
+    <div class="stat">
+        <span class="stat-label">Critical</span>
+        <span class="stat-value critical">{{ stats.priority_counts.CRITICAL | default(0) }}</span>
+    </div>
+    {% if stats.correction_stats %}
+    <div class="stat">
+        <span class="stat-label">Corrections</span>
+        <span class="stat-value">{{ stats.correction_stats.total_field_corrections | default(0) }}</span>
+    </div>
+    {% endif %}
+</div>
