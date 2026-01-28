@@ -172,6 +172,7 @@ See [docs/analytics.md](docs/analytics.md) for examples.
 - **[Analytics Guide](docs/analytics.md)** - Data analysis examples
 - **[Example Workflows](examples/workflows/)** - Sample pipelines
 - **[API Reference](docs/api-reference.md)** - Developer documentation
+- **[Architecture Diagrams](docs/diagrams/)** - Visual system documentation
 
 ---
 
